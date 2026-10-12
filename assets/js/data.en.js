@@ -196,27 +196,28 @@ window.SITE = {
     },
     {
       id: 'openclaw',
-      name: 'OpenClaw',
-      label: 'Conversational Systems',
+      name: 'Conversational CRM on OpenClaw',
+      label: 'Self-hosted Agents',
       role: 'Systems Architect',
       cats: ['ai', 'ops'],
       hue: 50,
       mockup: 'chat',
-      tagline: 'Conversational CRM: onboarding, qualification and client management run entirely through messaging interfaces.',
-      problem: 'Clients ignored dashboards and forms. The business needed onboarding and follow-ups to happen where people already were: in chat.',
-      solution: 'A client-management architecture that operates entirely through messaging: natural-language intent parsing, a strict conversational state machine, and secure mapping of conversation data back to the relational model.',
+      tagline: 'Client onboarding, qualification and CRM workflows built on self-hosted OpenClaw agents, hardened and run in production.',
+      problem: 'Clients ignored dashboards and forms. The business needed onboarding and follow-ups to happen where people already were: in chat. The open-source OpenClaw agent could reach WhatsApp, Telegram and Slack, but out of the box it was neither safe nor structured enough to run a sales process.',
+      solution: 'A client-management architecture on top of self-hosted OpenClaw: natural-language intent parsing, a strict conversational state machine, secure mapping of conversation data back to the relational model, and a hardened deployment with the agent off the public internet, scoped credentials and vetted skills only.',
       highlights: [
         'Intent parsing with confidence thresholds and graceful fallbacks',
         'Explicit conversation state machine, so context is never lost',
-        'Automated onboarding, follow-up and data-collection flows',
-        'Audit trail of every state transition'
+        'Hardened OpenClaw deployment: private network, scoped credentials, skill allow-list, policy enforced outside the agent process',
+        'Audit trail of every state transition and tool call'
       ],
       outcomes: [
         { v: 'Chat-native', l: 'onboarding and CRM' },
-        { v: 'Stateful', l: 'multi-turn workflows' }
+        { v: 'Stateful', l: 'multi-turn workflows' },
+        { v: 'Hardened', l: 'production agent deployment' }
       ],
-      stack: ['Messaging APIs', 'Intent parsing', 'State machines', 'Relational DB', 'Workflow engine'],
-      links: [{ label: 'openclaw.com', url: 'https://openclaw.com' }]
+      stack: ['OpenClaw', 'Messaging APIs', 'Intent parsing', 'State machines', 'Relational DB'],
+      links: []
     },
     {
       id: 'iconking',

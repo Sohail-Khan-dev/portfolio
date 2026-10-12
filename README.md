@@ -78,8 +78,16 @@ Each project is one object in the `projects` array. Fields:
 ### 4. Using real screenshots
 Put files in `assets/img/projects/` and add `image: 'assets/img/projects/agentmagic.png'` (plus optional `imageAlt`) to the project. 1600×1000 px (16:10) works for cards; the dialog crops to 21:9.
 
-### 5. Copy
-All section copy (hero, capabilities, process, about, contact) is in the HTML files; project and UI strings are in the data files.
+### 5. Productized services (the "Services" section)
+The three fixed-price offers (agent & MCP security, white-label Copilot/Azure bench for MSPs, AI rescue & run) live directly in `index.html` and `ar.html` under `id="services"`. Each card has:
+
+- a `from $…` price list — starting points taken from the October 2026 market brief; adjust before launch,
+- a WhatsApp button with its own pre-filled message via `data-wa-text="…"` (falls back to the global `whatsappText` when omitted).
+
+Keep the three offers identical in both languages; only the copy differs.
+
+### 6. Copy
+All section copy (hero, services, capabilities, process, about, contact) is in the HTML files; project and UI strings are in the data files.
 
 ## Local preview
 

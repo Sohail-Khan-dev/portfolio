@@ -26,7 +26,7 @@
   function waLink(text) { return 'https://wa.me/' + S.contact.whatsapp + (text ? '?text=' + encodeURIComponent(text) : ''); }
   $$('[data-contact]').forEach(function (a) {
     var k = a.getAttribute('data-contact');
-    if (k === 'whatsapp') a.href = waLink(S.contact.whatsappText);
+    if (k === 'whatsapp') a.href = waLink(a.getAttribute('data-wa-text') || S.contact.whatsappText);
     else if (k === 'email') a.href = 'mailto:' + S.contact.email;
     else if (S.contact[k]) a.href = S.contact[k];
   });
