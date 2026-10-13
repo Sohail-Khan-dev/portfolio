@@ -112,11 +112,14 @@
     return global.Mockups ? global.Mockups.svg(p, suffix) : '';
   }
 
+  /* Optional `status` (e.g. "In development") shows as a pill on the card and in the dialog. */
+  function statusBadge(p) { return p.status ? '<em class="status-pill">' + esc(p.status) + '</em>' : ''; }
+
   function renderProjects() {
     if (!grid) return;
     grid.innerHTML = S.projects.map(function (p) {
       return '<a class="project" href="#project-' + esc(p.id) + '" data-cat="' + esc((p.cats || []).join(' ')) + '" data-reveal>'
-        + '<div class="project__media">' + mediaFor(p, 'card') + '</div>'
+        + '<div class="project__media">' + mediaFor(p, 'card') + statusBadge(p) + '</div>'
         + '<div class="project__body">'
         + '<div class="project__meta"><span>' + esc(p.label) + '</span><span>' + esc(p.role) + '</span></div>'
         + '<h3 class="project__title">' + esc(p.name) + '</h3>'
@@ -163,11 +166,130 @@
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
+  /* Full 6-part case study (projects with a `cs` block):
+     problem & user → architecture → decisions → security → outcomes → links. */
+  var ICON_FLOW = '<svg viewBox="0 0 40 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8h34M30 3l6 5-6 5"/></svg>';
+  var ICON_LOOP = '<svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h34M31 2l5 4-5 4M38 16H4M9 12l-5 4 5 4"/></svg>';
+
+  function list(items, cls) {
+    return '<ul class="' + cls + '">' + (items || []).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+  }
+
+  /* `arch.stages` draws one flow; `arch.flows: [{ label, stages }]` draws several lanes over one shared store. */
+  function archHtml(a) {
+    var lanes = (a.flows || [{ stages: a.stages }]).map(function (f) {
+      return (f.label ? '<div class="arch__lane">' + esc(f.label) + '</div>' : '') + '<div class="arch__flow">' + flowHtml(a, f.stages) + '</div>';
+    }).join('');
+    return '<figure class="arch">' + lanes
+      + (a.store ? '<div class="arch__bus" aria-hidden="true"><span>' + esc(a.bus || '') + '</span></div>'
+        + '<div class="arch__store"><b class="arch__t">' + esc(a.store.t) + '</b>' + list(a.store.items, 'arch__store-items') + '</div>' : '')
+      + (a.caption ? '<figcaption class="arch__caption">' + esc(a.caption) + '</figcaption>' : '')
+      + '</figure>';
+  }
+
+  function flowHtml(a, stages) {
+    var flow = '';
+    stages.forEach(function (st, i) {
+      if (i) {
+        var loop = a.loop && st.hot;
+        flow += '<div class="arch__arrow' + (loop ? ' arch__arrow--loop' : '') + '" aria-hidden="true">' + (loop ? ICON_LOOP + '<span>' + esc(a.loop) + '</span>' : ICON_FLOW) + '</div>';
+      }
+      flow += '<div class="arch__stage' + (st.hot ? ' arch__stage--hot' : '') + '">'
+        + '<div class="arch__node"><span class="arch__k">' + String(i + 1).padStart(2, '0') + ' · ' + esc(st.k) + '</span>'
+        + '<b class="arch__t">' + esc(st.t) + '</b>' + list(st.items, 'arch__items') + '</div>'
+        + (st.aside ? '<div class="arch__aside"><b>' + esc(st.aside.t) + '</b><span>' + esc(st.aside.d) + '</span></div>' : '')
+        + '</div>';
+    });
+    return flow;
+  }
+
+  function caseStudyHtml(p) {
+    var c = p.cs, L = S.ui.cs, h = '';
+    var sec = function (i, body) {
+      return '<section class="cs-sec" id="cs-' + (i + 1) + '" aria-labelledby="cs-h' + (i + 1) + '">'
+        + '<header class="cs-sec__head"><span class="cs-sec__n">' + String(i + 1).padStart(2, '0') + '</span>'
+        + '<h3 class="cs-sec__title" id="cs-h' + (i + 1) + '">' + esc(L.heads[i]) + '</h3></header>' + body + '</section>';
+    };
+
+    h += '<nav class="cs-nav" aria-label="' + esc(L.nav) + '">' + L.tabs.map(function (t, i) {
+      return '<button type="button" data-cs-jump="cs-' + (i + 1) + '"><i>' + String(i + 1).padStart(2, '0') + '</i>' + esc(t) + '</button>';
+    }).join('') + '</nav>';
+
+    h += '<div class="cs-intro">'
+      + (c.role ? '<div class="cs-role"><h3 class="dialog__h3">' + esc(L.role) + '</h3><p>' + esc(c.role) + '</p></div>' : '')
+      + '<dl class="cs-glance">' + (c.glance || []).map(function (g) { return '<div><dt>' + esc(g[0]) + '</dt><dd>' + esc(g[1]) + '</dd></div>'; }).join('') + '</dl>'
+      + '<div class="dialog__chips">' + (p.stack || []).map(function (t) { return '<span class="chip">' + esc(t) + '</span>'; }).join('') + '</div>'
+      + '</div>';
+
+    // 01 Problem & target user
+    h += sec(0, '<p class="cs-p">' + esc(c.problem) + '</p>'
+      + (c.blockers ? '<h4 class="cs-sub">' + esc(L.blockers) + '</h4><div class="cs-cards cs-cards--3">' + c.blockers.map(function (b) {
+        return '<div class="cs-card"><b>' + esc(b.t) + '</b><p>' + esc(b.d) + '</p></div>';
+      }).join('') + '</div>' : '')
+      + (c.user ? '<div class="cs-callout"><h4 class="dialog__h3">' + esc(L.user) + '</h4><p>' + esc(c.user) + '</p></div>' : ''));
+
+    // 02 Architecture
+    h += sec(1, c.arch ? archHtml(c.arch) : '');
+
+    // 03 Decisions & trade-offs
+    h += sec(2, '<div class="cs-cards cs-cards--2">' + (c.decisions || []).map(function (d) {
+      return '<article class="cs-dec"><h4 class="cs-dec__t">' + esc(d.t) + '</h4><dl>'
+        + '<div><dt>' + esc(L.chose) + '</dt><dd>' + esc(d.c) + '</dd></div>'
+        + '<div><dt>' + esc(L.over) + '</dt><dd>' + esc(d.o) + '</dd></div>'
+        + '<div><dt>' + esc(L.why) + '</dt><dd>' + esc(d.w) + '</dd></div>'
+        + '<div class="cs-dec__cost"><dt>' + esc(L.cost) + '</dt><dd>' + esc(d.x) + '</dd></div>'
+        + '</dl></article>';
+    }).join('') + '</div>');
+
+    // 04 Resilience & security (+ named limits)
+    h += sec(3, (c.securityNote ? '<p class="cs-p cs-p--lead">' + esc(c.securityNote) + '</p>' : '') + '<div class="cs-cards cs-cards--3">' + (c.security || []).map(function (s) {
+      return '<div class="cs-card cs-card--sec"><b>' + esc(s.t) + '</b>' + list(s.items, 'bullets bullets--sm') + '</div>';
+    }).join('') + '</div>'
+      + (c.audit ? '<div class="cs-callout cs-callout--audit"><h4 class="dialog__h3">' + esc(c.audit.t) + '</h4><p>' + esc(c.audit.d) + '</p>' + list(c.audit.items, 'bullets bullets--sm') + '</div>' : '')
+      + (c.limits && c.limits.length ? '<h4 class="cs-sub">' + esc(L.limits) + '</h4><div class="cs-limits" role="table">'
+        + '<div class="cs-limit cs-limit--head" role="row"><span role="columnheader">' + esc(L.today) + '</span><i aria-hidden="true"></i><span role="columnheader">' + esc(L.next) + '</span></div>'
+        + c.limits.map(function (l) {
+          return '<div class="cs-limit" role="row"><span role="cell">' + esc(l.l) + '</span><i aria-hidden="true">' + ICON_FLOW + '</i><span role="cell">' + esc(l.n) + '</span></div>';
+        }).join('') + '</div>' : ''));
+
+    // 05 Measurable outcomes (+ regional readiness)
+    h += sec(4, '<div class="outcomes outcomes--cs">' + (c.outcomes || []).map(function (o) {
+      return '<div class="outcome"><b>' + esc(o.v) + '</b><span>' + esc(o.l) + '</span>'
+        + (o.e ? '<small><em>' + esc(L.evidence) + '</em> ' + esc(o.e) + '</small>' : '') + '</div>';
+    }).join('') + '</div>'
+      + (c.outcomesNote ? '<p class="cs-note">' + esc(c.outcomesNote) + '</p>' : '')
+      + (c.region ? '<div class="cs-callout cs-callout--region"><h4 class="dialog__h3">' + esc(c.region.t) + '</h4>' + list(c.region.items, 'bullets bullets--sm') + '</div>' : ''));
+
+    // 06 Live links & verification
+    h += sec(5, (c.linksNote ? '<p class="cs-p cs-p--lead">' + esc(c.linksNote) + '</p>' : '')
+      + (c.links && c.links.length ? '<div class="cs-links">' + c.links.map(function (l) {
+        return '<a class="cs-link" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer"><b>' + esc(l.label) + '</b><span>' + esc(l.d || '') + '</span>' + ICON_EXT + '</a>';
+      }).join('') + '</div>' : '')
+      + (c.verify ? '<h4 class="cs-sub">' + esc(L.verify) + '</h4>' + list(c.verify, 'bullets bullets--sm') : ''));
+
+    return h;
+  }
+
+  if (dlg) dlg.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-cs-jump]') : null;
+    var t = b && doc.getElementById(b.getAttribute('data-cs-jump'));
+    if (t) t.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  });
+
   function fillDialog(p) {
     $('#dlg-media').innerHTML = mediaFor(p, 'dialog');
-    $('#dlg-meta').innerHTML = '<span>' + esc(p.label) + '</span><span>' + esc(p.role) + '</span>';
+    $('#dlg-meta').innerHTML = '<span>' + esc(p.label) + '</span><span>' + esc(p.role) + '</span>' + statusBadge(p);
     $('#dlg-title').textContent = p.name;
     $('#dlg-lead').textContent = p.tagline;
+    var full = !!(p.cs && S.ui.cs);
+    $('#dlg-legacy').hidden = full;
+    $('#dlg-cs').hidden = !full;
+    $('#dlg-cs').innerHTML = full ? caseStudyHtml(p) : '';
+    if (full) {
+      $('#dlg-actions').innerHTML = (p.links && p.links[0] ? '<a class="btn btn--sm btn--primary" href="' + esc(p.links[0].url) + '" target="_blank" rel="noopener noreferrer">' + esc(S.ui.cs.visit.replace('{name}', p.links[0].label)) + ICON_EXT + '</a>' : '')
+        + '<a class="btn btn--sm btn--ghost" href="' + esc(waLink(S.ui.discussText.replace('{name}', p.name))) + '" target="_blank" rel="noopener noreferrer">' + ICON_WA + esc(S.ui.discuss) + '</a>';
+      return;
+    }
     $('#dlg-problem').textContent = p.problem;
     $('#dlg-solution').textContent = p.solution;
     $('#dlg-highlights').innerHTML = (p.highlights || []).map(function (h) { return '<li>' + esc(h) + '</li>'; }).join('');

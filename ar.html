@@ -367,13 +367,16 @@
         <div class="dialog__meta" id="dlg-meta"></div>
         <h2 class="dialog__title" id="dlg-title"></h2>
         <p class="dialog__lead" id="dlg-lead"></p>
-        <div class="dialog__grid">
-          <section class="dialog__block"><h3 class="dialog__h3">التحدي</h3><p id="dlg-problem"></p></section>
-          <section class="dialog__block"><h3 class="dialog__h3">الحل</h3><p id="dlg-solution"></p></section>
+        <div id="dlg-legacy">
+          <div class="dialog__grid">
+            <section class="dialog__block"><h3 class="dialog__h3">التحدي</h3><p id="dlg-problem"></p></section>
+            <section class="dialog__block"><h3 class="dialog__h3">الحل</h3><p id="dlg-solution"></p></section>
+          </div>
+          <section class="dialog__section"><h3 class="dialog__h3">أبرز الجوانب الهندسية</h3><ul class="bullets" id="dlg-highlights"></ul></section>
+          <section class="dialog__section"><h3 class="dialog__h3">النتائج</h3><div class="outcomes" id="dlg-outcomes"></div></section>
+          <section class="dialog__section"><h3 class="dialog__h3">التقنيات</h3><div class="dialog__chips" id="dlg-stack"></div></section>
         </div>
-        <section class="dialog__section"><h3 class="dialog__h3">أبرز الجوانب الهندسية</h3><ul class="bullets" id="dlg-highlights"></ul></section>
-        <section class="dialog__section"><h3 class="dialog__h3">النتائج</h3><div class="outcomes" id="dlg-outcomes"></div></section>
-        <section class="dialog__section"><h3 class="dialog__h3">التقنيات</h3><div class="dialog__chips" id="dlg-stack"></div></section>
+        <div class="cs" id="dlg-cs" hidden></div>
         <div class="dialog__actions" id="dlg-actions"></div>
       </div>
     </div>
