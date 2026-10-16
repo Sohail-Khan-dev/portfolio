@@ -8,7 +8,7 @@ window.SITE = {
 
   /* ---- Contact (update before going live) ---- */
   contact: {
-    whatsapp: '966537430772',
+    whatsapp: '+923025504938',
     whatsappText: 'Hi Sohail, I saw your portfolio and would like to discuss a project.',
     email: 'contact@example.com',
     linkedin: 'https://www.linkedin.com/in/',

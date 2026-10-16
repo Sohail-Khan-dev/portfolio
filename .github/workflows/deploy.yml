@@ -1,0 +1,65 @@
+name: Deploy to sohail.kodeking.net
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Cache-busting: rewrite assets/js/*.js and assets/css/*.css references in
+      # every HTML page to assets/...?v=<commit>, so browsers and CDNs fetch the
+      # new files on each deploy instead of serving stale cached copies.
+      - name: Stamp asset versions
+        run: |
+          VERSION="${GITHUB_SHA::8}"
+          sed -i -E "s#(assets/(js|css)/[^\"?]+\.(js|css))\"#\1?v=${VERSION}\"#g" *.html
+          grep -n "?v=${VERSION}" *.html
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "${{ secrets.SSH_PORT || 22 }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      # --delete removes files that no longer exist in the repo; the "P" filters
+      # protect server-only files (SSL challenges, CloudPanel's .user.ini).
+      - name: Upload files
+        run: |
+          rsync -avz --delete \
+            --exclude '.git/' --exclude '.github/' --exclude '.claude/' \
+            --exclude '*.md' \
+            --filter 'P .well-known/' --filter 'P .user.ini' \
+            -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT || 22 }}" \
+            ./ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/"
+
+      # Only runs if the domain is proxied through Cloudflare and both
+      # CLOUDFLARE_* secrets are set.
+      - name: Purge Cloudflare cache
+        if: env.CF_API_TOKEN != '' && env.CF_ZONE_ID != ''
+        run: |
+          curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"hosts":["sohail.kodeking.net"]}'
+
+      - name: Smoke test
+        run: |
+          curl -fsS -o /dev/null -w "index.html -> %{http_code}\n" https://sohail.kodeking.net/
+          curl -fsS https://sohail.kodeking.net/ | grep -q "?v=${GITHUB_SHA::8}" \
+            && echo "Live site is serving this commit's assets." \
+            || (echo "Live HTML does not reference the new asset version yet." && exit 1)

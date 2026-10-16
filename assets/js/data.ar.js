@@ -8,7 +8,7 @@ window.SITE = {
 
   /* ---- بيانات التواصل (حدّثها قبل النشر) ---- */
   contact: {
-    whatsapp: '966537430772',
+    whatsapp: '+923025504938',
     whatsappText: 'مرحباً سهيل، اطلعت على ملف أعمالك وأود مناقشة مشروع.',
     email: 'contact@example.com',
     linkedin: 'https://www.linkedin.com/in/',
