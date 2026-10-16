@@ -19,6 +19,9 @@ window.SITE = {
   avatar: { deep: [0.07, 0.30, 1.00], mid: [0.28, 0.70, 1.00], ice: [0.85, 0.93, 1.00] },
   starColor: '255,255,255',
 
+  /* Edition pages: the home page and the case-study page (project.html?p=<id>) */
+  pages: { home: 'index.html', project: 'project.html' },
+
   /* ---- UI strings used by main.js ---- */
   ui: {
     open: 'Case study',
@@ -30,6 +33,9 @@ window.SITE = {
     private: 'Private build — details on request.',
     discuss: 'Discuss a similar build',
     discussText: 'Hi Sohail, I read the {name} case study and would like to discuss a similar build.',
+    pageTitle: '{name} case study — Sohail Khan',
+    prev: 'Previous case study',
+    next: 'Next case study',
 
     /* Labels for full 6-part case studies (projects with a `cs` block) */
     cs: {
@@ -438,6 +444,146 @@ window.SITE = {
       }
     },
     {
+      id: 'esim',
+      name: 'eSIMzee',
+      label: 'Travel eSIM Comparison',
+      role: 'Lead Engineer',
+      cats: ['ai', 'ops', 'devops'],
+      hue: 195,
+      mockup: 'dashboard',
+      tagline: 'A live travel eSIM comparison platform on Cloudflare’s edge. A queued sync pipeline keeps 237 countries and 130+ providers current, and the AI plan search can only describe plans that exist in the database.',
+      stack: ['TypeScript', 'Hono 4', 'Astro 4 + Preact', 'Drizzle ORM', 'Cloudflare Workers · D1 · KV · R2', 'Queues + Durable Objects', 'Workers AI · Llama 3.3'],
+      links: [{ label: 'esimzee.com', url: 'https://esimzee.com/' }],
+
+      /* Full 6-part case study. Live product; metrics trace to git, test runs, the typecheck and the public API. */
+      cs: {
+        role: 'Lead engineer and repository owner on a three-person team. I set up the Cloudflare stack and CI/CD and built the scheduled sync path: cron triggers, queue and worker. I also wrote five of the eight provider adapters, designed the schema and migrations, wrote the affiliate-attribution guard and built the bulk catalog importer. I opened and merged all 17 merged pull requests. Teammates built most of the admin panel and the AI chat and search layer. I work with AI coding agents under my direction: 17 of my commits list Claude as co-author.',
+        glance: [
+          ['Product', 'Compares travel eSIM plans by country, region and provider, with an AI plan search, a chat assistant, a trip planner and a device checker. Affiliate-funded: “View Deal” sends the traveler to the provider.'],
+          ['Built for', 'Travelers choosing a data plan, plus the operator’s editors and admins (27 admin pages)'],
+          ['Timeline', '1 Apr → 11 Oct 2026 · 162 commits, 103 of the 131 non-merge commits mine · 17 merged PRs'],
+          ['Codebase', '~48,600 lines of TypeScript, Astro and CSS · ~160 API route handlers · 18 tables and 3 full-text indexes'],
+          ['Platform', 'Cloudflare Workers, Pages, D1, KV, R2, Queues, Durable Objects and Workers AI · GitHub Actions'],
+          ['Status', 'Live at esimzee.com; private repository']
+        ],
+        problem: 'Travel eSIM prices change all the time across more than 130 providers, and each provider has a different API. The operator has to keep plans current, attach the right affiliate link and serve pages cheaply, for a catalog far too large to edit by hand. Travelers have to find the right plan for a trip without reading thousands of near-identical listings.',
+        blockers: [
+          { t: 'Volume and churn', d: 'Europe alone has 83,270 plans, and their prices change. No editor can keep that current by hand.' },
+          { t: 'Different provider APIs', d: 'Every provider API has a different shape, so each needs its own adapter, and one slow or failing provider must not hold up the rest.' },
+          { t: 'Lost affiliate revenue', d: 'Imported buy links carried other publishers’ affiliate IDs, so every click credited a third party instead of the site.' }
+        ],
+        user: 'Two groups. Travelers choose a data plan before a trip. The operator’s editors and admins run syncs, imports, health checks and content from 27 admin pages. What travelers struggle with is my reading of the product: there is no user research on record, so this case study makes no claims based on it.',
+
+        arch: {
+          flows: [
+            { label: 'AI search path · POST /api/ai/search', stages: [
+              { k: 'Input', t: 'Traveler in the browser', items: ['Astro 4 on Cloudflare Pages: search, chat and trip-planner islands', 'A same-origin proxy forwards requests to the API'] },
+              { k: 'Gateway', t: 'Hono 4 API Worker', items: ['CORS allowlist and secure headers', '20 requests per minute per IP plus a 3 s session cooldown, kept in KV', 'Loads the session’s last intent from a Durable Object'] },
+              { k: 'Reason', t: 'Fixed three-step pipeline', hot: true, items: ['1 · Intent as strict JSON (temperature 0.1); off-topic gets a canned reply and no second call', '2 · Code builds a bound-parameter query, capped at 10 rows', '3 · Reply written from the top 5 rows only (temperature 0.6)'],
+                aside: { t: 'Grounded', d: 'Code chooses every plan and price; the model only describes the rows returned' } },
+              { k: 'Models', t: 'Fallback chain', items: ['Workers AI: Llama 3.3 70B → Mistral Small 3.1 24B → Llama 3.1 8B', 'Free OpenRouter models once the daily allocation is used up', 'A paid search model only for time-sensitive chat questions'] }
+            ] },
+            { label: 'Price sync path · scheduled, for API-connected providers', stages: [
+              { k: 'Schedule', t: '4 cron triggers', items: ['Prices every 6 hours', 'A delta sync 5 days a week and a full sync twice a week'] },
+              { k: 'Queue', t: 'Sync queue', items: ['Batches of 10, one job per provider', '3 retries, then a dead-letter queue'] },
+              { k: 'Sync', t: 'Queue consumer', hot: true, items: ['8 provider adapters plus a generic REST fallback', 'Content-hash upsert: only changed plans are written', 'A job row per run, an email on failure and a cache purge by key prefix'] }
+            ] },
+            { label: 'Catalog import path · offline', stages: [
+              { k: 'Generate', t: 'Importer', items: ['Writes idempotent SQL files that can be reviewed and re-run', 'Never touches providers that sync over their API'] },
+              { k: 'Load', t: 'wrangler d1 execute', items: ['Resumable from any file', 'Deactivates plans and never deletes them, then purges the cache explicitly'] }
+            ] }
+          ],
+          bus: 'three paths, one edge data layer',
+          store: { t: 'Cloudflare D1 + KV + R2', items: ['D1 (SQLite): 18 tables and 3 FTS5 search indexes', 'KV cache: lists 6 h, plans 10 min, search 5 min', 'R2: provider logos and blog covers', 'Durable Objects: chat sessions that expire after 10 idle minutes'] },
+          caption: 'This is not an autonomous agent: there is no agent loop and no tool calling, because the job doesn’t need either. Code fixes the number of model calls: at most 3 per search, each trying up to 5 models. Code, not the model, decides every database query, so cost and behaviour stay bounded.'
+        },
+
+        decisions: [
+          { t: 'Public model provider', c: 'A Workers AI chain: Llama 3.3 70B → Mistral Small 3.1 24B → Llama 3.1 8B, then free OpenRouter models if a key is set', o: 'Paid OpenAI on every public AI route (the previous setup)',
+            w: 'Runs on Cloudflare’s free daily allocation with no key to manage, so a broken key can no longer take the chat down.', x: 'Open models are less reliable at strict JSON, so code strips fences and extracts the first JSON object. The quality difference isn’t measured.' },
+          { t: 'Model settings per task', c: 'Intent JSON at temperature 0.1 and 400 tokens; trip plans at 0.3 and 600; conversational replies at 0.6–0.7', o: 'One setting for every call',
+            w: 'Low temperature where the output must parse, higher where it is prose.', x: 'No evaluation set exists yet to tune these values.' },
+          { t: 'Cost vs latency for live answers', c: 'A paid search model (gpt-4o-mini-search-preview) only for time-sensitive chat questions, with one retry if the answer has no citations', o: 'Always searching, or never searching',
+            w: 'Searching too often costs a little latency, but a stale answer costs trust. A lower search setting saved no measurable latency.', x: 'False positives still cost money, and the time-sensitivity check only understands English, so questions in other languages use the free chain.' },
+          { t: 'Local vs API inference', c: 'Hosted inference only: the Workers AI binding, OpenRouter and OpenAI over HTTPS', o: 'Self-hosted or local models',
+            w: 'The free Workers AI tier covers public chat, search, comparison verdicts and trip plans, with no GPUs to run.', x: 'Depends on vendors, with no offline mode; each provider’s terms govern data handling.' },
+          { t: 'Grounding', c: 'The model extracts intent; code builds the SQL; the model only describes the rows returned. Compare-page winners are computed in code, and trip-plan picks are bounds-checked.', o: 'Letting the model choose plans or prices',
+            w: 'The model never sees a plan that isn’t in the query result, and it never decides which plan wins.', x: 'Two to three model calls per search. End-to-end latency isn’t measured yet.' },
+          { t: 'Conversation state', c: 'One Durable Object per chat session: the last 10 messages and the last intent, summarised at 10 and cleared after 10 idle minutes', o: 'A sessions table in D1',
+            w: 'Per-session state that expires on its own. Follow-ups such as “cheaper” or “add Spain” reuse the previous intent.', x: 'Chat history can’t be queried for analytics.' },
+          { t: 'Sync execution', c: 'Cron triggers queue one job per provider. A consumer runs each job with 3 retries, then a dead-letter queue, and records every run.', o: 'Doing the work inside the cron handler',
+            w: 'One slow or failing provider can’t block the others, and every run leaves a record.', x: 'Every error is retried the same way, so a permanent failure such as bad credentials uses up all its retries.' },
+          { t: 'Write minimisation', c: 'A 64-bit FNV-1a content hash per plan; the upsert writes only when the hash changes', o: 'SHA-256 via Web Crypto',
+            w: 'FNV-1a needs no async call on Workers, and unchanged plans cost no database writes.', x: 'Not collision-resistant. That is acceptable because it only ever compares its own outputs.' },
+          { t: 'Data and cache tier', c: 'D1 (SQLite) with FTS5 search, behind a KV cache with per-type lifetimes', o: 'A database hosted outside the edge platform',
+            w: 'Compute, data and cache run on one platform, on one bill.', x: 'At full catalog size the Europe page hit D1’s bound-variable cap (fixed with a subquery rewrite). A cache filled mid-import showed a 413-plan provider as “0 plans” (fixed with an explicit purge).' },
+          { t: 'Rendering and deploys', c: 'Astro hybrid: country and provider pages prerendered, blog and admin rendered per request. The build fails if the API returns no countries.', o: 'Prerendering everything (admin pages started that way and broke)',
+            w: 'Static catalog pages are fast and cheap. Admin pages need server rendering for redirects and session checks.', x: 'Catalog changes need a web redeploy, and the build’s ~200 API calls needed retries with backoff and batching.' },
+          { t: 'Affiliate attribution', c: 'An allowlist of the site’s own publisher IDs; every other tracking link is unwrapped to its destination or dropped', o: 'Trusting imported buy links',
+            w: 'Every click credits the site, not a third party.', x: 'Plans with no safe link show no buy button, which loses some clicks.' },
+          { t: 'Bulk catalog import', c: 'Offline SQL generation, loaded with wrangler d1 execute: idempotent and resumable, and it never touches API-synced providers', o: 'Importing through the running Worker',
+            w: 'SQL files that can be reviewed and re-run, kept separate from live sync.', x: 'Skips the Worker’s cache invalidation, so an explicit purge step was added. Imported plans have no scheduled refresh.' }
+        ],
+
+        securityNote: 'These are the controls in place today. An admin-side hardening pass is planned; its items will be listed here once they ship.',
+        security: [
+          { t: 'Grounded AI', items: ['Model output never runs as code or as a tool call; intent fields only fill bound query parameters', 'Code builds every query, capped at 10 rows; replies use the top 5 rows only', 'Off-topic requests get a canned reply with no second model call'] },
+          { t: 'Human in the loop', items: ['AI plan import shows a preview, and only rows an admin approves are saved', 'Providers that sync over their API can’t be imported manually (HTTP 409)', 'User reviews wait for moderation; AI-written SEO copy goes back to the editor as a draft'] },
+          { t: 'Failure handling', items: ['Queue with 3 retries and a dead-letter queue, plus an email alert when a sync fails', 'Five-model fallback chain with 25 s timeouts and friendly fallback replies', 'Upserts keyed on provider and external ID, guarded by a content hash, so a repeated run changes nothing'] },
+          { t: 'Deploy guards', items: ['The deploy build fails if the API returns no countries', 'Post-deploy smoke tests: /health and the homepage must load, and /api/auth/me must return 401', 'Build-time GET requests that are safe to repeat are retried 4 times with exponential backoff and jitter'] },
+          { t: 'Isolation and abuse limits', items: ['Staging has its own D1, KV, R2 and queues', 'CORS origin allowlist and secure headers on every response', 'Contact and review forms protected by Turnstile and daily per-IP counters'] },
+          { t: 'Data handling', items: ['Drizzle query builder; raw SQL only through prepared, bound statements', 'Reviews store a SHA-256 hash of the email, never the address; contact messages are emailed, not stored', 'Affiliate links pass the allowlist guard before they reach a page'] }
+        ],
+
+        limits: [
+          { l: 'Tests cover only the catalog importer, and CI runs only on the stage branch', n: 'API route tests, plus tests and a blocking typecheck on every PR to main' },
+          { l: 'No live staging environment; production deploys are started by hand', n: 'Rebuild staging with fake seed data and require it to pass before production' },
+          { l: 'Only API-connected providers sync on a schedule; the rest refresh when the catalog is re-imported', n: 'Schedule the importer or add adapters for the largest providers, and show “last updated” on each plan' },
+          { l: 'Sync errors aren’t classified, and every retry sends its own alert', n: 'Treat 4xx errors as permanent; alert once, when a job reaches the dead-letter queue' },
+          { l: 'Admin actions aren’t written to an audit log yet', n: 'Log every admin change, and hash-chain the rows for tamper evidence' },
+          { l: 'No tracking of clicks, conversions or latency', n: 'A click-logging redirect, Workers Analytics Engine for latency and an external uptime probe' },
+          { l: 'Prerendered pages stay stale until someone redeploys', n: 'Trigger a deploy after each import, or render list pages on the server' }
+        ],
+
+        outcomes: [
+          { v: '237 · 132', l: 'countries and providers in the live public catalog', e: 'public API meta.total, 16 Oct 2026' },
+          { v: '83,270', l: 'plans served for the Europe region alone, after a query rewrite fixed a D1 bound-variable failure at that size', e: 'public API, 16 Oct 2026; fix commit, 11 Oct 2026' },
+          { v: '≈3.4 s → 0.05 s', l: 'Europe plans endpoint, first request vs cached repeats. One client, n = 4: a spot check, not a benchmark', e: 'curl timing, 12 Oct 2026' },
+          { v: '0', l: 'type errors across all 5 workspace packages; astro check clean over 123 files', e: 'pnpm -r typecheck, 12 Oct 2026' },
+          { v: '28 / 28', l: 'tests passing; they cover the catalog importer only', e: 'importer test run, 12 Oct 2026' },
+          { v: '8 + 1', l: 'provider-specific adapters plus a generic REST fallback, all behind one interface', e: 'adapter registry' }
+        ],
+        outcomesNote: 'The repository proves scale and build health, not business results. Uptime, p95 latency, cache hit rate, traffic, clicks and revenue aren’t measured yet. Some of the raw data already exists: a row for every sync job with counts and timings, and a last-synced timestamp on every plan. It will be reported once the instrumentation is in place.',
+
+        region: {
+          t: 'Gulf and US readiness',
+          items: [
+            'Gulf catalog coverage (12 Oct 2026): UAE 4,289 plans, Saudi Arabia 4,210, Kuwait 4,550, Qatar 3,999, Bahrain 3,606 and Oman 3,494, from about $0.50.',
+            'Ready for the US: English by default, USD prices and 7,881 United States plans.',
+            'The interface isn’t Gulf-ready yet: there is no Arabic locale or right-to-left layout (it ships in English, Japanese, Spanish, French, German and Chinese). The API converts 20 currencies including AED, but the selector offers only USD, EUR and GBP. SAR, QAR, KWD, BHD and OMR come next.',
+            'Little personal data is held: admin accounts, review names with hashed emails, and chat turns that expire. There is no data-residency setting or enterprise SSO yet; both are on the roadmap and aren’t claimed as capabilities.'
+          ]
+        },
+
+        links: [
+          { label: 'esimzee.com', url: 'https://esimzee.com/', d: 'Live product' },
+          { label: 'esimzee.com/compare', url: 'https://esimzee.com/compare', d: 'Plan comparison with an AI verdict' },
+          { label: 'esimzee.com/ai-chat', url: 'https://esimzee.com/ai-chat/', d: 'AI chat assistant' },
+          { label: 'esimzee.com/japan', url: 'https://esimzee.com/japan', d: 'A prerendered country page' },
+          { label: 'esimzee.com/providers', url: 'https://esimzee.com/providers/', d: 'Provider directory' },
+          { label: 'api.esimzee.com/health', url: 'https://api.esimzee.com/health', d: 'Live health endpoint' },
+          { label: 'Public API · countries', url: 'https://api.esimzee.com/api/countries?per_page=1', d: 'meta.total is the live country count' }
+        ],
+        linksNote: 'Production is live, and you can reproduce the catalog numbers above from its public API. The repository is private.',
+        verify: [
+          'Re-run the numbers: open the public API link above and read meta.total, or try /api/regions/europe/plans?per_page=1.',
+          'Recorded walkthrough on request: an AI search with follow-ups (“cheaper”, “add Spain”), a provider sync in the admin dashboard and the AI import preview-then-commit flow.',
+          'Code excerpts on request, with the owner’s approval: the affiliate guard, the content hash, the grounded query builder and the sync upsert.',
+          'The 28-test run log and the zero-error typecheck output.'
+        ]
+      }
+    },
+    {
       id: 'slopsense',
       name: 'slopSense',
       label: 'AI Architecture',
@@ -510,30 +656,6 @@ window.SITE = {
       ],
       stack: ['Laravel', 'PHP 8.3', 'Inertia.js v3', 'React 19', 'TypeScript', 'Design tokens'],
       links: [{ label: 'Source on GitHub', url: 'https://github.com/Koding-net/Rahal-FleetManagement' }]
-    },
-    {
-      id: 'esim',
-      name: 'eSIM Platforms',
-      label: 'Telecom Data',
-      role: 'Backend & Automation Engineer',
-      cats: ['ops', 'devops'],
-      hue: 195,
-      mockup: 'dashboard',
-      tagline: 'Continuously synchronized global eSIM catalog with a multi-tier affiliate engine, powering esimdb.ai and esimzee.com.',
-      problem: 'Telecom packages change daily across dozens of providers. Showing a plan that no longer exists, or at the wrong price, costs trust and refunds.',
-      solution: 'Scheduled CRON jobs and background queue workers reconcile package data from multiple provider APIs continuously, and a custom affiliate system tracks referrals and calculates multi-tier commissions with transparent partner reporting.',
-      highlights: [
-        'Idempotent sync jobs with change detection',
-        'Queue-based processing that isolates slow provider APIs',
-        'Dynamic commission rules per partner tier',
-        'Partner-facing reporting and payout transparency'
-      ],
-      outcomes: [
-        { v: '99.9%', l: 'package data accuracy' },
-        { v: '2', l: 'platforms on one data layer' }
-      ],
-      stack: ['Laravel', 'CRON', 'Queue workers', 'Provider APIs', 'Affiliate engine'],
-      links: [{ label: 'esimdb.ai', url: 'https://esimdb.ai' }, { label: 'esimzee.com', url: 'https://esimzee.com' }]
     },
     {
       id: 'openclaw',
