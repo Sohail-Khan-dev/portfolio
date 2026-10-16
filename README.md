@@ -20,7 +20,7 @@ Claude_portfolio/
 │   ├── js/
 │   │   ├── avatar.js       WebGL particle avatar (morphing sphere → orbit → lattice)
 │   │   ├── starfield.js    Fixed starfield background (Canvas 2D)
-│   │   ├── mockups.js      Deterministic SVG "product shot" generator for project cards
+│   │   ├── mockups.js      Per-project SVG cover art for cards and case-study banners
 │   │   ├── main.js         Nav, reveal, counters, marquee, filters, case-study dialog, routing
 │   │   ├── data.en.js      English content: contact, filters, stack, 9 projects
 │   │   └── data.ar.js      Arabic content: same structure, Gulf-first ordering
@@ -75,8 +75,8 @@ Each project is one object in the `projects` array. Fields:
 | `problem`, `solution`, `highlights[]`, `outcomes[]` | Case-study body                                                                                                               |
 | `stack[]`                                           | Chips (first three show on the card)                                                                                          |
 | `links[]`                                           | `{ label, url }` buttons; empty array shows "private build"                                                                   |
-| `hue`, `mockup`                                     | Generated cover: hue 0–360, mockup `dashboard` / `chat` / `table` / `map` / `grid` / `graph` / `console`                      |
-| `image` (optional)                                  | Path to a real screenshot; overrides the generated mockup                                                                     |
+| `hue`                                               | Cover tint, 0–360. The cover scene is keyed by `id` in `mockups.js` (no scene = typographic title card)                        |
+| `image` (optional)                                  | Path to a real screenshot; overrides the generated cover                                                                      |
 | `cs` (optional)                                     | Full 6-part case study (see below); when present it replaces `problem` / `solution` / `highlights` / `outcomes` in the dialog |
 | `status` (optional)                                 | Pill on the card image and in the dialog header, e.g. `'In development'` / `'قيد التطوير'`                                    |
 
