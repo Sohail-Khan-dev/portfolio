@@ -69,6 +69,12 @@
   }
 
   /* ---------- 4. Animated counters ---------------------------------------- */
+  /* data-count-from="shipped" = projects without a `status` (e.g. "In development"). */
+  $$('[data-count-from="shipped"]').forEach(function (el) {
+    var n = (S.projects || []).filter(function (p) { return !p.status; }).length;
+    el.setAttribute('data-count', n);
+    el.textContent = n;
+  });
   $$('[data-count]').forEach(function (el) {
     var target = parseFloat(el.getAttribute('data-count')), dec = parseInt(el.getAttribute('data-decimals') || '0', 10);
     var prefix = el.getAttribute('data-prefix') || '', suffix = el.getAttribute('data-suffix') || '';
