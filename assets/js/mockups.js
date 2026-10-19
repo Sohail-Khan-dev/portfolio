@@ -287,6 +287,42 @@
       return s;
     },
 
+    /* Branch-scoped admin: fee KPIs and paid/unpaid students for one campus, the branch-scope rule and an A4 print sheet */
+    tech4u: function (c) {
+      var s = win(c, 26, 30, 412, 330, 'tech4u · admin/fees'), dark = '#0b1a05';
+      s += T(42, 80, 'Fees', 14, W(.95), { w: 600 }) + T(82, 80, 'Branch: Campus A', 10, W(.45));
+      s += rect(352, 66, 72, 22, c.acc, 7) + T(388, 81, '+ Enroll', 9.5, dark, { a: 'middle', w: 700 });
+      [['PKR 412,500', 'Collected · Oct'], ['86', 'Payments'], ['19', 'Unpaid students']].forEach(function (k, i) {
+        var x = 42 + i * 128;
+        s += rect(x, 96, 120, 50, W(.03), 10, stroke(W(.08))) + T(x + 12, 118, k[0], 13, i === 0 ? c.acc : (i === 2 ? WARN : W(.95)), { w: 700 }) + T(x + 12, 134, k[1], 9, W(.45));
+      });
+      s += T(42, 168, 'CODE', 8, W(.4), { mono: 1, ls: 1 }) + T(104, 168, 'STUDENT', 8, W(.4), { mono: 1, ls: 1 })
+        + T(210, 168, 'COURSE', 8, W(.4), { mono: 1, ls: 1 }) + T(422, 168, 'STATUS', 8, W(.4), { a: 'end', mono: 1, ls: 1 });
+      [['T4-0142', 'Ayesha K.', 'Web Development', 1], ['T4-0141', 'Bilal A.', 'Graphic Design', 0], ['T4-0139', 'Hira M.', 'MS Office', 1],
+        ['T4-0137', 'Usman T.', 'Python Basics', 1], ['T4-0136', 'Sana I.', 'Digital Marketing', 0]].forEach(function (r, i) {
+        var y = 176 + i * 34;
+        s += rect(42, y, 382, 1, W(.06)) + T(42, y + 21, r[0], 9.5, W(.55), { mono: 1 }) + T(104, y + 21, r[1], 10.5, W(.9), { w: 600 }) + T(210, y + 21, r[2], 10, W(.6));
+        s += r[3] ? rect(374, y + 9, 50, 17, 'rgba(52,211,153,.12)', 8.5, stroke('rgba(52,211,153,.5)')) + T(399, y + 21, 'Paid', 9, OK, { a: 'middle', w: 600 })
+          : rect(352, y + 9, 72, 17, c.A(.18), 8.5, stroke(c.A(.55))) + T(388, y + 21, 'Pay fee', 9, c.acc, { a: 'middle', w: 600 });
+      });
+
+      s += card(c, 452, 40, 162, 150);
+      s += I('shield', 466, 54, 14, c.acc, 1.8) + T(486, 66, 'Branch scope', 11, W(.92), { w: 600 });
+      s += I('check', 466, 82, 11, OK, 2) + T(482, 91, 'Super Admin: all branches', 9, W(.7));
+      s += I('check', 466, 102, 11, OK, 2) + T(482, 111, 'Manager: own branch only', 9, W(.7));
+      s += rect(466, 128, 134, 46, '#2a1114', 8, stroke(BAD, 1.2, '4 3')) + I('lock', 474, 136, 12, BAD, 2)
+        + T(492, 146, 'Campus B student', 9, BAD, { w: 600 }) + T(492, 162, '403 · not your branch', 8.5, W(.55), { mono: 1 });
+
+      s += card(c, 452, 206, 162, 154);
+      s += rect(482, 220, 102, 126, '#f4f2ec', 3);
+      s += rect(492, 232, 40, 6, '#1d2433', 1) + rect(492, 244, 66, 3, '#c9c6bd', 1) + rect(552, 230, 22, 26, '#d9d6cd', 2);
+      [262, 272, 282, 292, 302].forEach(function (y, i) { s += rect(492, y, i % 2 ? 58 : 76, 3, '#c9c6bd', 1); });
+      s += rect(492, 328, 34, 1, '#1d2433') + rect(540, 328, 34, 1, '#1d2433');
+      s += T(509, 338, 'Guardian', 5.5, '#555', { a: 'middle' }) + T(557, 338, 'Authorized', 5.5, '#555', { a: 'middle' });
+      s += T(533, 356, 'A4 · print or save as PDF', 8, W(.5), { a: 'middle' });
+      return s;
+    },
+
     /* Fleet ops: live map with vehicles, an exception-first Attention Center, telematics for one vehicle */
     rentora: function (c) {
       var s = win(c, 26, 30, 588, 340, 'Rentora · Fleet live'), clip = c.id + '-map', i;

@@ -22,7 +22,7 @@ Claude_portfolio/
 │   │   ├── starfield.js    Fixed starfield background (Canvas 2D)
 │   │   ├── mockups.js      Per-project SVG cover art for cards and case-study banners
 │   │   ├── main.js         Nav, reveal, counters, marquee, filters, case-study dialog, routing
-│   │   ├── data.en.js      English content: contact, filters, stack, 9 projects
+│   │   ├── data.en.js      English content: contact, filters, stack, 11 projects
 │   │   └── data.ar.js      Arabic content: same structure, Gulf-first ordering
 │   └── img/projects/       Drop real screenshots here (see "Using real screenshots")
 └── .claude/launch.json     Local preview server config (python -m http.server 8765)

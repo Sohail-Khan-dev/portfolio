@@ -580,6 +580,132 @@ window.SITE = {
       }
     },
     {
+      id: 'tech4u',
+      name: 'Tech4U',
+      label: 'Student & Fee Management',
+      role: 'Sole Developer',
+      cats: ['ops', 'devops'],
+      hue: 100,
+      tagline: 'A multi-branch student and fee management system with a public course site, built solo in 10 weeks. Branch managers only ever see their own campus; the owner sees fee totals across the whole network.',
+      stack: ['Laravel 13', 'PHP 8.3', 'Laravel Fortify', 'Blade + jQuery', 'Tailwind CSS 4', 'SQLite', 'PHPUnit 12', 'GitHub Actions'],
+      links: [],
+
+      /* Full 6-part case study. Deployed for the institute's owner; metrics trace to git, test runs and GitHub Actions history. */
+      cs: {
+        role: 'Sole developer: all 12 commits are mine. Built for the institute’s owner, who chose the hosting and approved changes. I worked with AI pair-programming tools (Cursor and Claude Code) under my direction across the whole build: the public site, the branch-scoped admin, the test suite and the CI and deploy pipeline.',
+        glance: [
+          ['Product', 'Public course site with an inquiry form, plus an admin area for enrollments, fees, courses, branches and managers, with A4 print and bulk PDF export'],
+          ['Built for', 'The institute owner (Super Admin), campus Branch Managers, and prospective students and parents'],
+          ['Market', 'Pakistan: fees in PKR, the father’s CNIC on enrollment, +92 phone numbers'],
+          ['Timeline', '10 Aug → 19 Oct 2026 · 12 commits on 5 working days'],
+          ['Codebase', '~7,300 lines of app code · 1,163 lines of tests · 30 routes · 5 models'],
+          ['Status', 'Deployed by CI to the owner’s shared hosting (6 of 6 deploys succeeded); private repository']
+        ],
+        problem: 'A computer institute with several campuses needs one record of students and fees. Each campus manager may see only their own campus, while the owner needs fee totals across the whole network. Prospective students and parents need course, duration and fee in one visit, plus a way to ask about enrolling.',
+        blockers: [
+          { t: 'One record, many campuses', d: 'Managers enroll students and take fees at their own campus. The owner needs totals, payment counts and who has or hasn’t paid, per branch and for any date range.' },
+          { t: 'Strict branch privacy', d: 'A manager must never see, edit or export another campus’s students, even by changing an ID in a URL or a form.' },
+          { t: 'Paper still matters', d: 'Records print on A4 with guardian and authorized-signature lines, and front-desk staff look students up by name, code, phone or father’s CNIC, with or without dashes.' }
+        ],
+        user: 'The owner (Super Admin) and the Branch Managers who run each campus’s front desk, plus prospective students and parents on the public site. The repository doesn’t record the process this replaced, or how many branches, staff and students use it, so this case study makes no before-and-after claims.',
+
+        arch: {
+          flows: [
+            { label: 'Staff path · every /admin request', stages: [
+              { k: 'Sign-in', t: 'Fortify session login', items: ['Self-registration off; 5 attempts per minute per email and IP', 'admin middleware on every admin route; super_admin on courses, branches and managers'] },
+              { k: 'Validate', t: 'Controllers + Form Requests', items: ['Dashboard, students, fees, courses, branches, managers', 'CNIC format, digits-only phones, images up to 2 MB', 'Deleting a course still in use returns HTTP 409'] },
+              { k: 'Isolate', t: 'Policy + query scope', hot: true, items: ['StudentPolicy: same branch, or Super Admin', 'Student::visibleTo() adds the branch filter to every student, fee and dashboard query', 'A manager’s branch comes from their account, never the request'],
+                aside: { t: 'Tested', d: '13 feature tests guard branch isolation and authorization' } }
+            ] },
+            { label: 'Public path · visitors and parents', stages: [
+              { k: 'Visit', t: 'Public site', items: ['Courses, durations and fees from the courses table', 'Inquiry form with a CSRF token'] },
+              { k: 'Inquire', t: 'Inquiry controller', items: ['Validates the form and confirms receipt', 'Doesn’t store or forward the inquiry yet (see known limits)'] }
+            ] },
+            { label: 'Delivery path · every push to main', stages: [
+              { k: 'Check', t: 'tests.yml', items: ['Pint lint and the full PHPUnit suite on every push and pull request', 'Runs alongside the deploy, not before it'] },
+              { k: 'Build', t: 'deploy.yml', items: ['Assets built in CI, never on the shared host', 'Preflight refuses home, public_html, shallow or non-Laravel target paths'] },
+              { k: 'Ship', t: 'rsync over SSH', items: ['rsync --delete, then migrate (never --seed)', 'One deploy at a time; actions pinned by commit SHA'] }
+            ] }
+          ],
+          bus: 'one SQLite file behind every path',
+          store: { t: 'SQLite via Eloquent', items: ['students · fee_payments · courses · branches · users', 'Sessions, cache and queue on the database driver', 'Transactions on enrollment, course rename and the main-branch switch'] },
+          caption: 'A classic server-rendered Laravel monolith with no AI component: no model calls and no agent loop, and the only server-side outbound call is the breached-password check. The design work is in the isolation layer. Before any student or fee row is read or written, the policy and the query scope limit it to the signed-in manager’s branch; only a Super Admin skips that filter.'
+        },
+
+        decisions: [
+          { t: 'UI stack', c: 'Server-rendered Blade + jQuery, with one set of design tokens for the public site and the admin', o: 'Inertia or a single-page app',
+            w: 'The simplest stack for marketing pages, and one design system serves both surfaces.', x: 'Admin interactivity is hand-written: admin.js alone is 761 lines.' },
+          { t: 'Admin and roles', c: 'A custom Blade admin, Fortify login and a two-value UserRole enum', o: 'Filament, and Spatie permissions',
+            w: 'Only two roles exist, and the admin keeps the site’s own design system.', x: 'Every CRUD screen is built by hand, and there is no permission matrix.' },
+          { t: 'Hosting and deploy', c: 'Build in GitHub Actions, then rsync --delete over SSH to Namecheap shared hosting', o: 'Laravel Cloud, Forge, or building on the host',
+            w: 'The owner’s hosting choice, and a shared host can’t build assets reliably.', x: 'No atomic release or rollback step: files sync in place.' },
+          { t: 'Database', c: 'SQLite, with sessions, cache and queue on the database driver', o: 'MySQL or Postgres, plus Redis',
+            w: 'No database server to run or administer on shared hosting.', x: 'One writer at a time, and no automated backups yet.' },
+          { t: 'Branch isolation', c: 'An app-level query scope plus a policy; a manager’s branch comes from their user record, never the request', o: 'Row-level security, or a database per branch',
+            w: 'SQLite has no row-level security, and two roles fit a single scope.', x: 'Isolation holds only if every query uses the scope, so 13 tests guard it.' },
+          { t: 'PDF output', c: 'A print-ready Blade sheet that the browser saves as PDF', o: 'The DomPDF package',
+            w: 'No new dependency: one view serves single print, PDF and bulk export.', x: 'No server-generated PDF files; the output depends on the browser.' },
+          { t: 'Course catalog', c: 'A courses table; students store the title, a rename cascades in a transaction, and deleting a course in use returns 409', o: 'A hard-coded sample catalog class, or a foreign key',
+            w: 'One source for the public site and the admin, with a small migration.', x: 'The denormalized title needs cascade logic.' },
+          { t: 'Phone inputs', c: 'type=tel with a numeric keypad, plus a digits-only rule on the server', o: 'type=number',
+            w: 'Number inputs accept e, + and -, and drop the leading zero of 03XX mobile numbers.', x: 'Needs a small JavaScript input filter.' },
+          { t: 'Dashboard freshness vs cost', c: 'SQL aggregates on every request, no cache', o: 'Cached or precomputed metrics',
+            w: 'Always-fresh numbers at the current data volume.', x: 'Query cost grows with the number of rows.' },
+          { t: 'CI supply chain', c: 'GitHub Actions pinned by commit SHA, a read-only token and no persisted credentials', o: 'Version tags',
+            w: 'Builds that resist a tampered action release.', x: 'Action version bumps are manual.' }
+        ],
+
+        securityNote: 'These are the controls in the code today. A hardening pass is planned; its items will be listed here once they ship.',
+        security: [
+          { t: 'Branch isolation', items: ['Branch filter on every student, fee and dashboard query', 'Per-record policy: view, update and delete only inside your own branch', 'Branch IDs sent by the browser are ignored for managers; bulk export drops other-branch IDs and returns 403 if none remain'] },
+          { t: 'Sign-in and roles', items: ['Fortify session login with self-registration off', 'Login throttled to 5 attempts per minute per email and IP', 'Production passwords: 12+ characters, mixed case, numbers, symbols and a breached-password check'] },
+          { t: 'Web hardening', items: ['CSRF token on every form and AJAX call', 'HTML escaped in client-rendered tables and modals', 'Uploads limited to images up to 2 MB, saved under random file names'] },
+          { t: 'Data safety', items: ['Transactions around enrollment, course rename and the main-branch switch', 'Destructive database commands blocked in production', 'Fee records can’t be edited or deleted from the UI, and a course in use can’t be deleted'] },
+          { t: 'Deploy guards', items: ['Preflight refuses home, public_html, shallow or non-Laravel paths before rsync --delete runs', 'One deploy at a time', 'A /up health endpoint'] },
+          { t: 'Secrets and supply chain', items: ['.env never committed; deploy secrets live in GitHub Actions and are never synced to the server', 'Actions pinned by commit SHA, with a read-only token', 'Lint and the full test suite on every push and pull request'] }
+        ],
+
+        limits: [
+          { l: 'The public inquiry form confirms receipt but doesn’t store or forward the inquiry yet', n: 'An inquiries table, an admin list and an email or WhatsApp alert, with a rate limit' },
+          { l: 'Deploys don’t wait for tests: the two workflows run side by side', n: 'One workflow in which the deploy job needs the test job' },
+          { l: 'No audit log, and deleting a student also deletes their fee history', n: 'Soft deletes and an activity log for every change' },
+          { l: 'No automated backups of the SQLite database', n: 'A nightly backup to off-site storage' },
+          { l: 'No two-factor sign-in or self-service password reset (both off in Fortify)', n: 'Turn on Fortify two-factor auth; its tables already exist' },
+          { l: 'Student and receipt codes come from MAX(id)+1 and can collide under concurrent saves', n: 'Derive codes from the inserted row’s ID' },
+          { l: 'Pakistan-only formats, the UTC time zone and an English-only interface', n: 'Locale, currency, ID format and time zone per deployment' }
+        ],
+
+        outcomes: [
+          { v: '61 / 61', l: 'tests passing: 297 assertions in 3.2 s', e: 'php artisan test, 19 Oct 2026, PHP 8.3' },
+          { v: '13', l: 'feature tests for branch isolation and authorization', e: 'tests/Feature/Admin' },
+          { v: '6 / 6', l: 'deploys succeeded, 28–51 s each', e: 'GitHub Actions run history, 11 Aug → 12 Sep 2026' },
+          { v: '0', l: 'lint violations (Laravel Pint)', e: 'pint --test, 19 Oct 2026' },
+          { v: '~7,300', l: 'non-blank lines of app code, plus 1,163 lines of tests', e: 'git ls-files line count' },
+          { v: '30', l: 'app routes over 5 models', e: 'php artisan route:list' }
+        ],
+        outcomesNote: 'These are engineering numbers. The repository doesn’t measure production use: uptime, latency, active users, time saved and fees processed aren’t recorded yet. Most can come from data the system already holds: the /up endpoint for uptime, the students and fee_payments tables for enrollments and collections per branch, and the users table for active staff.',
+
+        region: {
+          t: 'Gulf and US readiness',
+          items: [
+            'Built for Pakistan and not Gulf- or US-ready today: English only, with no Arabic or right-to-left layout; fees in PKR stored as text; the Pakistani CNIC format; phone numbers without a country code; and the UTC time zone.',
+            'What carries over as-is: tested multi-branch isolation, login throttling, a 12-character production password policy with a breached-password check, CSRF on every form, secrets kept out of git, SHA-pinned CI actions, and lint and tests on every push.',
+            'Before a Gulf or US rollout: Arabic and RTL, a numeric fee field with a currency per branch, Emirates ID or Iqama in place of CNIC (and no national ID on US forms), E.164 phone numbers and a time zone per deployment.',
+            'Not in place yet, and not claimed: SSO, MFA, an audit log, backups and disaster recovery, a data-residency choice, and privacy and retention documents for student records.'
+          ]
+        },
+
+        links: [],
+        linksNote: 'Nothing public to check yet: the repository is private and the production domain isn’t recorded in it, so there is no live link here. Until a demo instance is up, verification is by walkthrough.',
+        verify: [
+          'A 2–3 minute recorded walkthrough with demo data: sign in as Super Admin and switch branches on the dashboard, sign in as a manager and see that other branches’ students are invisible, record a fee and export PDFs.',
+          'Code excerpts on request, with the owner’s approval: Student::visibleTo(), StudentPolicy, the deploy preflight guard and the cross-branch isolation test.',
+          'A screenshot of the GitHub Actions run history: the test runs and the 6 successful deploys.',
+          'A link will be added here once a demo instance with fake student data is up.'
+        ]
+      }
+    },
+    {
       id: 'slopsense',
       name: 'slopSense',
       label: 'AI Architecture',
