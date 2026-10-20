@@ -184,134 +184,6 @@ window.SITE = {
       }
     },
     {
-      id: 'yourailist',
-      name: 'YourAIList',
-      label: 'Discovery Platform',
-      role: 'Owner & Lead Engineer',
-      cats: ['ai', 'saas'],
-      hue: 265,
-      tagline: 'A search-first directory of AI agents, automations and workflows, organised by business task. Scheduled LLM pipelines fill and enrich 504 live pages, and no rating appears without a source.',
-      stack: ['Laravel 13', 'PHP 8.3', 'Livewire', 'Filament 5', 'OpenRouter', 'MySQL', 'Pest 4'],
-      links: [{ label: 'yourailist.com', url: 'https://yourailist.com' }],
-
-      /* Full 6-part case study. Metrics trace to git, the test run, the live sitemap or Search Console. */
-      cs: {
-        role: 'My own venture. As product owner, architect and lead engineer I directed AI coding agents (Claude and Codex) through the build; 94 of 98 commits (95.9%) and 95.2% of added lines are under my name. That covers the Laravel app and data model, the Filament admin, the ingestion pipeline, the three LLM pipelines, the evidence-gated trust model, the SEO layer and the guarded deploy. One other contributor added 4 commits on a single day.',
-        glance: [
-          ['Product', 'Server-rendered discovery site for AI agents, automations, workflows and task guides'],
-          ['Built for', 'Founders, agencies, business owners, automation builders and AI consultants'],
-          ['Timeline', '4 Jun → 11 Oct 2026 · 98 commits · 11 merged PRs'],
-          ['Codebase', '~10,100 lines of PHP · ~6,800 lines of Blade, CSS and JS · 38 migrations · 19 models'],
-          ['AI layer', 'OpenRouter with live web search; deepseek-chat-v3.1 by default, swappable with one env var']
-        ],
-        problem: 'Buyers of AI automation can’t tell which tool actually solves a given business task. Search a generic directory for “WhatsApp automation” and you get half-abandoned tools, duplicate listings and products renamed three times. And a small team can’t keep a directory fresh by hand.',
-        blockers: [
-          { t: 'Noise, not answers', d: 'Large directories list everything and compare nothing, so the buyer still researches every tool for their task.' },
-          { t: 'Manual seeding doesn’t scale', d: 'Thousands of AI tools launch every month. Adding and updating them by hand is unsustainable for a small operator.' },
-          { t: 'Untraceable trust signals', d: 'A directory loses credibility the moment it shows stars, badges or reviews nobody can trace to a source.' }
-        ],
-        user: 'SMB operators in English-speaking markets: founders, agencies and automation builders choosing a tool for one job. The product answer is task pages that compare 3–5 sourced options for that job, with a curated layer of workflows and guides on top of the automated catalogue.',
-
-        arch: {
-          flows: [
-            { label: 'Write path · scheduled jobs', stages: [
-              { k: 'Trigger', t: 'Laravel scheduler', items: ['4 jobs: tool import and automation research hourly, AI news every 6 h, a daily article', 'Each locked with withoutOverlapping() and onOneServer()'] },
-              { k: 'Collect', t: 'Importers + classifiers', items: ['Parallel page fetches with Http::pool()', 'Deterministic keyword rules pick the category', 'Dedup by slug, website, source URL and host'] },
-              { k: 'Write', t: 'LLM pipelines', items: ['Article writer, listing enricher, automation researcher', 'One OpenRouter call each, with :online web search', 'JSON extracted, validated and length-capped'] },
-              { k: 'Gate', t: 'Publish gate', hot: true, items: ['A listing goes live only if its own website answers HTTP 2xx', 'Unreachable sites drop to draft'],
-                aside: { t: 'Human review', d: 'The daily article is saved as a draft and emailed to the admin; user submissions wait in a Filament queue' } }
-            ] },
-            { label: 'Read path · visitors and crawlers', stages: [
-              { k: 'Request', t: 'Visitors and crawlers', items: ['Server-rendered HTML that search engines index directly', 'JSON-LD schema layer: Organization, WebSite, SoftwareApplication'] },
-              { k: 'Guard', t: 'Canonical host + throttles', items: ['www → HTTPS apex redirect', 'Route limits: directory 60/min, forms 5/min'] },
-              { k: 'Serve', t: 'Controllers + Livewire', items: ['Faceted search, command palette, Stack Builder', 'TrustEvidence hides any rating without a source and date'] }
-            ] }
-          ],
-          bus: 'both paths meet in MySQL',
-          store: { t: 'MySQL · single database', items: ['19 models · 38 migrations', 'Cache, queue and sessions on the database driver', 'Filament admin (12 resources), admin-only'] },
-          caption: 'Visitors only read; scheduled jobs write. The AI layer is a set of bounded batch pipelines, not an interactive agent: no ReAct loop and no tool calling, so the model can only return text that code then validates. For a content system that removes a whole class of runaway-agent risk.'
-        },
-
-        decisions: [
-          { t: 'Rendering', c: 'Server-rendered Blade, with Livewire for interactive widgets', o: 'A Vue / React / Inertia SPA',
-            w: 'Crawlers index the HTML straight away, and organic search is the main growth channel.', x: 'Less client-side interactivity; Livewire and light jQuery carry it.' },
-          { t: 'Inference location', c: 'Hosted models through OpenRouter', o: 'A local or self-hosted model',
-            w: 'Shared hosting has no GPU and no long-running processes; hosting cost drove the choice.', x: 'Per-call cost, and a third-party dependency behind every AI feature.' },
-          { t: 'Model', c: 'deepseek-chat-v3.1 by default, swappable with one env var', o: 'A premium frontier model',
-            w: 'Low price per token for high-volume batch writing.', x: 'Writing quality isn’t benchmarked yet; accuracy rests on prompt rules and admin review.' },
-          { t: 'Grounding', c: 'OpenRouter :online web search on all three writer pipelines', o: 'A custom RAG index or scraping stack',
-            w: 'Fresh facts with no index to build or maintain.', x: 'Higher cost per call; citations aren’t yet stored beside the generated text.' },
-          { t: 'Cost vs latency', c: 'Hard token caps (8k article, 6k enrichment, 4k research), a 180 s timeout and 2 retries', o: 'Streaming or unbounded output',
-            w: 'Predictable cost per artefact and no runaway generations.', x: 'A batch job can block for minutes: fine for cron, ruled out for anything user-facing.' },
-          { t: 'Output contract', c: 'One JSON object per reply; code strips fences, extracts it, then validates and truncates every field', o: 'Provider JSON mode or tool calling',
-            w: 'Behaves the same on any OpenRouter model, so the model stays swappable.', x: 'A malformed reply fails the run instead of being repaired.' },
-          { t: 'Classification', c: 'Deterministic keyword rules ordered by specificity, with a fallback category', o: 'An LLM classifier',
-            w: 'Free, instant and explainable on every import.', x: 'Edge cases get misfiled; mapping refinement is on the list.' },
-          { t: 'Infrastructure', c: 'MySQL, with the database driver for cache, queue and sessions', o: 'Redis and Horizon',
-            w: 'Runs on shared hosting with nothing else to operate.', x: 'Cache and queue traffic add load to the main database.' },
-          { t: 'Admin', c: 'Filament, 12 resources', o: 'A custom admin panel',
-            w: 'Building it custom would have taken weeks.', x: 'Tied to Filament’s upgrade cycle.' },
-          { t: 'Scope reversal', c: 'Retired the public agency directory; old URLs 301 to the homepage', o: 'Keeping placeholder agencies live',
-            w: 'No real agencies were listed yet, and placeholders cost trust.', x: 'The model and admin resource stay behind as dormant code.' }
-        ],
-
-        securityNote: 'A single-tenant public site with no customer accounts, so tenant isolation and tool sandboxing don’t apply. The controls that matter here are output trust, failure isolation and deployment safety.',
-        security: [
-          { t: 'Trust by evidence', items: ['Stars, verified badges and testimonials render only with a stored source URL and a past date', 'Enforced in one place (TrustEvidence) and covered by a feature test', 'In force across the site since 1 Oct 2026'] },
-          { t: 'Human review where it counts', items: ['The daily AI article is saved as a draft and the admin is emailed', 'User-submitted listings wait in a Filament review queue', 'Imported listings publish only when the tool’s own website responds'] },
-          { t: 'Bounded LLM output', items: ['The model has no tools and executes nothing; it only returns text', 'Web pages are never pasted into prompts; scraped HTML is parsed by deterministic code', 'Replies are schema-validated and length-capped; listing text is escaped on render'] },
-          { t: 'Failure isolation', items: ['Retries and a 180 s timeout on every LLM call, with typed errors', 'One failing RSS feed is logged and skipped; the rest still import', 'The article job emails the admin when it fails'] },
-          { t: 'Idempotent jobs', items: ['Listings deduplicated by slug, website, source URL and host; news by URL', 'withoutOverlapping() and onOneServer() on all 4 schedules', 'Migrations guarded with hasTable / hasColumn so a cancelled deploy can resume'] },
-          { t: 'Guarded deploys and edge', items: ['The deploy path must be absolute, 3+ levels deep and end in the site directory, checked twice before rsync --delete', 'Secrets live in CI and env files, never in git', 'HSTS, X-Frame-Options, nosniff, Referrer- and Permissions-Policy; admin-only panel; route throttles'] }
-        ],
-
-        limits: [
-          { l: 'The deploy pipeline doesn’t run the test suite', n: 'A test job the deploy depends on' },
-          { l: 'LLM cost, token usage and cited sources aren’t stored', n: 'Save the usage block and cited URLs on every article and listing' },
-          { l: 'Search uses leading-wildcard LIKE queries', n: 'MySQL FULLTEXT now, then Scout + Meilisearch as the catalogue grows' },
-          { l: 'No admin MFA, activity log or CSP yet', n: 'Filament MFA, an activity_log table and a nonce-based CSP' },
-          { l: 'English only', n: 'An Arabic and RTL edition if the Gulf becomes a target market' }
-        ],
-
-        outcomes: [
-          { v: '504', l: 'live URLs in the sitemap: 446 tools, 24 workflows, 16 guides, 15 pages, 3 task hubs', e: 'sitemap.xml, checked 12 Oct 2026' },
-          { v: '143 / 143', l: 'backend tests passing with 591 assertions, plus 3 frontend tests', e: 'php artisan test, 12 Oct 2026' },
-          { v: '120 → 143', l: 'tests added in 10 days alongside the trust and SEO work', e: 'session log, 1–11 Oct 2026' },
-          { v: '487', l: 'pages discovered by Google Search Console from the sitemap', e: 'Search Console, 1 Oct 2026' },
-          { v: '95.9%', l: 'of 98 commits and 95.2% of added lines are mine, over 4 months', e: 'git shortlog, git log --numstat' },
-          { v: '4', l: 'scheduled AI and import pipelines, each locked against overlapping runs', e: 'routes/console.php' }
-        ],
-        outcomesNote: 'These numbers cover build quality and public footprint. Traffic, uptime, latency, LLM cost per article, import yield and revenue aren’t measured yet. Each has a planned source (an external monitor on /up, OpenRouter usage blocks, per-run import counts, Search Console exports) and will be published with a date once measured.',
-
-        region: {
-          t: 'Regional readiness',
-          items: [
-            'English-only and priced in USD today; no Arabic interface or in-region hosting is claimed.',
-            'Region-aware research: task briefs compare demand in the US, UK, Germany and the UAE separately, and check UAE merchant support and Arabic invoicing before recommending a tool.',
-            'Locale plumbing is in place: the page language follows the app locale, so an Arabic edition is a translation and RTL layout job rather than a rebuild.',
-            'Payments run on Paddle Billing as merchant of record, which is built to handle sales tax and VAT across regions.'
-          ]
-        },
-
-        links: [
-          { label: 'yourailist.com', url: 'https://yourailist.com', d: 'Homepage with Organization and WebSite JSON-LD' },
-          { label: 'yourailist.com/tasks', url: 'https://yourailist.com/tasks', d: 'Task-first comparison hubs' },
-          { label: 'yourailist.com/agents', url: 'https://yourailist.com/agents', d: 'Directory with faceted Livewire filters' },
-          { label: 'yourailist.com/workflows', url: 'https://yourailist.com/workflows', d: '24 curated workflows' },
-          { label: 'yourailist.com/guides', url: 'https://yourailist.com/guides', d: 'Articles, AI-drafted and admin-approved' },
-          { label: 'yourailist.com/sitemap.xml', url: 'https://yourailist.com/sitemap.xml', d: 'Sitemap index: 5 files, 504 URLs' },
-          { label: 'yourailist.com/llms.txt', url: 'https://yourailist.com/llms.txt', d: 'LLM discoverability file' },
-          { label: 'yourailist.com/up', url: 'https://yourailist.com/up', d: 'Live health endpoint' }
-        ],
-        verify: [
-          'Walkthrough on request: the hourly import, a listing appearing in Filament, the daily draft email and the full Pest run.',
-          'Run any /tools page through Google’s Rich Results Test to see valid SoftwareApplication schema.',
-          'Code excerpts on request: the TrustEvidence gate, the deploy-path guard and the LLM output validator.',
-          'The repository is private; read-only reviewer access on request. The public site is the demo.'
-        ]
-      }
-    },
-    {
       id: 'khaatabook',
       name: 'KhaataBook',
       label: 'Bookkeeping SaaS',
@@ -1023,6 +895,134 @@ window.SITE = {
       ],
       stack: ['Laravel', 'Tailwind CSS', 'Nginx', 'VPS', 'SSL', 'Caching'],
       links: [{ label: 'spectrumgenius.net', url: 'https://spectrumgenius.net' }]
+    },
+    {
+      id: 'yourailist',
+      name: 'YourAIList',
+      label: 'Discovery Platform',
+      role: 'Owner & Lead Engineer',
+      cats: ['ai', 'saas'],
+      hue: 265,
+      tagline: 'A search-first directory of AI agents, automations and workflows, organised by business task. Scheduled LLM pipelines fill and enrich 504 live pages, and no rating appears without a source.',
+      stack: ['Laravel 13', 'PHP 8.3', 'Livewire', 'Filament 5', 'OpenRouter', 'MySQL', 'Pest 4'],
+      links: [{ label: 'yourailist.com', url: 'https://yourailist.com' }],
+
+      /* Full 6-part case study. Metrics trace to git, the test run, the live sitemap or Search Console. */
+      cs: {
+        role: 'My own venture. As product owner, architect and lead engineer I directed AI coding agents (Claude and Codex) through the build; 94 of 98 commits (95.9%) and 95.2% of added lines are under my name. That covers the Laravel app and data model, the Filament admin, the ingestion pipeline, the three LLM pipelines, the evidence-gated trust model, the SEO layer and the guarded deploy. One other contributor added 4 commits on a single day.',
+        glance: [
+          ['Product', 'Server-rendered discovery site for AI agents, automations, workflows and task guides'],
+          ['Built for', 'Founders, agencies, business owners, automation builders and AI consultants'],
+          ['Timeline', '4 Jun → 11 Oct 2026 · 98 commits · 11 merged PRs'],
+          ['Codebase', '~10,100 lines of PHP · ~6,800 lines of Blade, CSS and JS · 38 migrations · 19 models'],
+          ['AI layer', 'OpenRouter with live web search; deepseek-chat-v3.1 by default, swappable with one env var']
+        ],
+        problem: 'Buyers of AI automation can’t tell which tool actually solves a given business task. Search a generic directory for “WhatsApp automation” and you get half-abandoned tools, duplicate listings and products renamed three times. And a small team can’t keep a directory fresh by hand.',
+        blockers: [
+          { t: 'Noise, not answers', d: 'Large directories list everything and compare nothing, so the buyer still researches every tool for their task.' },
+          { t: 'Manual seeding doesn’t scale', d: 'Thousands of AI tools launch every month. Adding and updating them by hand is unsustainable for a small operator.' },
+          { t: 'Untraceable trust signals', d: 'A directory loses credibility the moment it shows stars, badges or reviews nobody can trace to a source.' }
+        ],
+        user: 'SMB operators in English-speaking markets: founders, agencies and automation builders choosing a tool for one job. The product answer is task pages that compare 3–5 sourced options for that job, with a curated layer of workflows and guides on top of the automated catalogue.',
+
+        arch: {
+          flows: [
+            { label: 'Write path · scheduled jobs', stages: [
+              { k: 'Trigger', t: 'Laravel scheduler', items: ['4 jobs: tool import and automation research hourly, AI news every 6 h, a daily article', 'Each locked with withoutOverlapping() and onOneServer()'] },
+              { k: 'Collect', t: 'Importers + classifiers', items: ['Parallel page fetches with Http::pool()', 'Deterministic keyword rules pick the category', 'Dedup by slug, website, source URL and host'] },
+              { k: 'Write', t: 'LLM pipelines', items: ['Article writer, listing enricher, automation researcher', 'One OpenRouter call each, with :online web search', 'JSON extracted, validated and length-capped'] },
+              { k: 'Gate', t: 'Publish gate', hot: true, items: ['A listing goes live only if its own website answers HTTP 2xx', 'Unreachable sites drop to draft'],
+                aside: { t: 'Human review', d: 'The daily article is saved as a draft and emailed to the admin; user submissions wait in a Filament queue' } }
+            ] },
+            { label: 'Read path · visitors and crawlers', stages: [
+              { k: 'Request', t: 'Visitors and crawlers', items: ['Server-rendered HTML that search engines index directly', 'JSON-LD schema layer: Organization, WebSite, SoftwareApplication'] },
+              { k: 'Guard', t: 'Canonical host + throttles', items: ['www → HTTPS apex redirect', 'Route limits: directory 60/min, forms 5/min'] },
+              { k: 'Serve', t: 'Controllers + Livewire', items: ['Faceted search, command palette, Stack Builder', 'TrustEvidence hides any rating without a source and date'] }
+            ] }
+          ],
+          bus: 'both paths meet in MySQL',
+          store: { t: 'MySQL · single database', items: ['19 models · 38 migrations', 'Cache, queue and sessions on the database driver', 'Filament admin (12 resources), admin-only'] },
+          caption: 'Visitors only read; scheduled jobs write. The AI layer is a set of bounded batch pipelines, not an interactive agent: no ReAct loop and no tool calling, so the model can only return text that code then validates. For a content system that removes a whole class of runaway-agent risk.'
+        },
+
+        decisions: [
+          { t: 'Rendering', c: 'Server-rendered Blade, with Livewire for interactive widgets', o: 'A Vue / React / Inertia SPA',
+            w: 'Crawlers index the HTML straight away, and organic search is the main growth channel.', x: 'Less client-side interactivity; Livewire and light jQuery carry it.' },
+          { t: 'Inference location', c: 'Hosted models through OpenRouter', o: 'A local or self-hosted model',
+            w: 'Shared hosting has no GPU and no long-running processes; hosting cost drove the choice.', x: 'Per-call cost, and a third-party dependency behind every AI feature.' },
+          { t: 'Model', c: 'deepseek-chat-v3.1 by default, swappable with one env var', o: 'A premium frontier model',
+            w: 'Low price per token for high-volume batch writing.', x: 'Writing quality isn’t benchmarked yet; accuracy rests on prompt rules and admin review.' },
+          { t: 'Grounding', c: 'OpenRouter :online web search on all three writer pipelines', o: 'A custom RAG index or scraping stack',
+            w: 'Fresh facts with no index to build or maintain.', x: 'Higher cost per call; citations aren’t yet stored beside the generated text.' },
+          { t: 'Cost vs latency', c: 'Hard token caps (8k article, 6k enrichment, 4k research), a 180 s timeout and 2 retries', o: 'Streaming or unbounded output',
+            w: 'Predictable cost per artefact and no runaway generations.', x: 'A batch job can block for minutes: fine for cron, ruled out for anything user-facing.' },
+          { t: 'Output contract', c: 'One JSON object per reply; code strips fences, extracts it, then validates and truncates every field', o: 'Provider JSON mode or tool calling',
+            w: 'Behaves the same on any OpenRouter model, so the model stays swappable.', x: 'A malformed reply fails the run instead of being repaired.' },
+          { t: 'Classification', c: 'Deterministic keyword rules ordered by specificity, with a fallback category', o: 'An LLM classifier',
+            w: 'Free, instant and explainable on every import.', x: 'Edge cases get misfiled; mapping refinement is on the list.' },
+          { t: 'Infrastructure', c: 'MySQL, with the database driver for cache, queue and sessions', o: 'Redis and Horizon',
+            w: 'Runs on shared hosting with nothing else to operate.', x: 'Cache and queue traffic add load to the main database.' },
+          { t: 'Admin', c: 'Filament, 12 resources', o: 'A custom admin panel',
+            w: 'Building it custom would have taken weeks.', x: 'Tied to Filament’s upgrade cycle.' },
+          { t: 'Scope reversal', c: 'Retired the public agency directory; old URLs 301 to the homepage', o: 'Keeping placeholder agencies live',
+            w: 'No real agencies were listed yet, and placeholders cost trust.', x: 'The model and admin resource stay behind as dormant code.' }
+        ],
+
+        securityNote: 'A single-tenant public site with no customer accounts, so tenant isolation and tool sandboxing don’t apply. The controls that matter here are output trust, failure isolation and deployment safety.',
+        security: [
+          { t: 'Trust by evidence', items: ['Stars, verified badges and testimonials render only with a stored source URL and a past date', 'Enforced in one place (TrustEvidence) and covered by a feature test', 'In force across the site since 1 Oct 2026'] },
+          { t: 'Human review where it counts', items: ['The daily AI article is saved as a draft and the admin is emailed', 'User-submitted listings wait in a Filament review queue', 'Imported listings publish only when the tool’s own website responds'] },
+          { t: 'Bounded LLM output', items: ['The model has no tools and executes nothing; it only returns text', 'Web pages are never pasted into prompts; scraped HTML is parsed by deterministic code', 'Replies are schema-validated and length-capped; listing text is escaped on render'] },
+          { t: 'Failure isolation', items: ['Retries and a 180 s timeout on every LLM call, with typed errors', 'One failing RSS feed is logged and skipped; the rest still import', 'The article job emails the admin when it fails'] },
+          { t: 'Idempotent jobs', items: ['Listings deduplicated by slug, website, source URL and host; news by URL', 'withoutOverlapping() and onOneServer() on all 4 schedules', 'Migrations guarded with hasTable / hasColumn so a cancelled deploy can resume'] },
+          { t: 'Guarded deploys and edge', items: ['The deploy path must be absolute, 3+ levels deep and end in the site directory, checked twice before rsync --delete', 'Secrets live in CI and env files, never in git', 'HSTS, X-Frame-Options, nosniff, Referrer- and Permissions-Policy; admin-only panel; route throttles'] }
+        ],
+
+        limits: [
+          { l: 'The deploy pipeline doesn’t run the test suite', n: 'A test job the deploy depends on' },
+          { l: 'LLM cost, token usage and cited sources aren’t stored', n: 'Save the usage block and cited URLs on every article and listing' },
+          { l: 'Search uses leading-wildcard LIKE queries', n: 'MySQL FULLTEXT now, then Scout + Meilisearch as the catalogue grows' },
+          { l: 'No admin MFA, activity log or CSP yet', n: 'Filament MFA, an activity_log table and a nonce-based CSP' },
+          { l: 'English only', n: 'An Arabic and RTL edition if the Gulf becomes a target market' }
+        ],
+
+        outcomes: [
+          { v: '504', l: 'live URLs in the sitemap: 446 tools, 24 workflows, 16 guides, 15 pages, 3 task hubs', e: 'sitemap.xml, checked 12 Oct 2026' },
+          { v: '143 / 143', l: 'backend tests passing with 591 assertions, plus 3 frontend tests', e: 'php artisan test, 12 Oct 2026' },
+          { v: '120 → 143', l: 'tests added in 10 days alongside the trust and SEO work', e: 'session log, 1–11 Oct 2026' },
+          { v: '487', l: 'pages discovered by Google Search Console from the sitemap', e: 'Search Console, 1 Oct 2026' },
+          { v: '95.9%', l: 'of 98 commits and 95.2% of added lines are mine, over 4 months', e: 'git shortlog, git log --numstat' },
+          { v: '4', l: 'scheduled AI and import pipelines, each locked against overlapping runs', e: 'routes/console.php' }
+        ],
+        outcomesNote: 'These numbers cover build quality and public footprint. Traffic, uptime, latency, LLM cost per article, import yield and revenue aren’t measured yet. Each has a planned source (an external monitor on /up, OpenRouter usage blocks, per-run import counts, Search Console exports) and will be published with a date once measured.',
+
+        region: {
+          t: 'Regional readiness',
+          items: [
+            'English-only and priced in USD today; no Arabic interface or in-region hosting is claimed.',
+            'Region-aware research: task briefs compare demand in the US, UK, Germany and the UAE separately, and check UAE merchant support and Arabic invoicing before recommending a tool.',
+            'Locale plumbing is in place: the page language follows the app locale, so an Arabic edition is a translation and RTL layout job rather than a rebuild.',
+            'Payments run on Paddle Billing as merchant of record, which is built to handle sales tax and VAT across regions.'
+          ]
+        },
+
+        links: [
+          { label: 'yourailist.com', url: 'https://yourailist.com', d: 'Homepage with Organization and WebSite JSON-LD' },
+          { label: 'yourailist.com/tasks', url: 'https://yourailist.com/tasks', d: 'Task-first comparison hubs' },
+          { label: 'yourailist.com/agents', url: 'https://yourailist.com/agents', d: 'Directory with faceted Livewire filters' },
+          { label: 'yourailist.com/workflows', url: 'https://yourailist.com/workflows', d: '24 curated workflows' },
+          { label: 'yourailist.com/guides', url: 'https://yourailist.com/guides', d: 'Articles, AI-drafted and admin-approved' },
+          { label: 'yourailist.com/sitemap.xml', url: 'https://yourailist.com/sitemap.xml', d: 'Sitemap index: 5 files, 504 URLs' },
+          { label: 'yourailist.com/llms.txt', url: 'https://yourailist.com/llms.txt', d: 'LLM discoverability file' },
+          { label: 'yourailist.com/up', url: 'https://yourailist.com/up', d: 'Live health endpoint' }
+        ],
+        verify: [
+          'Walkthrough on request: the hourly import, a listing appearing in Filament, the daily draft email and the full Pest run.',
+          'Run any /tools page through Google’s Rich Results Test to see valid SoftwareApplication schema.',
+          'Code excerpts on request: the TrustEvidence gate, the deploy-path guard and the LLM output validator.',
+          'The repository is private; read-only reviewer access on request. The public site is the demo.'
+        ]
+      }
     }
   ]
 };
