@@ -191,6 +191,40 @@
       return s;
     },
 
+    /* Voice booking: a live call with the AI agent, turned into a priced, paid and dispatched booking */
+    a2z: function (c) {
+      var s = card(c, 26, 40, 270, 320), dark = '#04140c';
+      s += circle(50, 66, 12, c.A(.2), stroke(c.acc, 1.5)) + I('mic', 43, 59, 14, c.acc, 2)
+        + T(70, 63, 'Ava · AI reservations', 11, W(.95), { w: 600 }) + T(70, 77, 'Live call · 02:41', 8.5, W(.45), { mono: 1 });
+      for (var k = 0; k < 34; k++) {
+        var h = 4 + Math.abs(Math.sin(k * 1.7) * 14 + Math.sin(k * .6) * 6);
+        s += rect(42 + k * 7, 104 - h / 2, 3.5, h, k < 24 ? c.acc : W(.15), 1.5);
+      }
+      [[0, 'I need a Sprinter Saturday at 7 pm, six hours.'], [1, 'Sure. Pickup address?'], [0, 'JFK Terminal 4, then Midtown.'], [1, 'Got it. Sending your payment link now.']].forEach(function (m, i) {
+        var y = 132 + i * 52, agent = m[0] === 1, w = 214;
+        var words = m[1].split(' '), lines = [''], j;
+        for (j = 0; j < words.length; j++) { var t = (lines[lines.length - 1] + ' ' + words[j]).trim(); if (t.length > 34) lines.push(words[j]); else lines[lines.length - 1] = t; }
+        s += rect(agent ? 66 : 42, y, w, lines.length * 14 + 12, agent ? c.A(.14) : W(.05), 10, stroke(agent ? c.A(.4) : W(.1)));
+        lines.forEach(function (l, li) { s += T((agent ? 66 : 42) + 10, y + 18 + li * 14, l, 9.5, agent ? W(.92) : W(.8)); });
+      });
+
+      s += '<path d="M306 200 h22" fill="none"' + stroke(c.acc, 1.5, '4 4') + '/>' + '<path d="M326 195 l6 5 -6 5" fill="none"' + stroke(c.acc, 1.5) + '/>';
+
+      s += win(c, 340, 40, 276, 320, 'Booking #A2Z-48213');
+      s += T(356, 92, 'Mercedes Sprinter · 6 h', 13, W(.95), { w: 600 }) + T(356, 108, 'Sat 7:00 PM · JFK T4 → Midtown', 9, W(.5));
+      [['$200 × 6 h', '$1,200'], ['Long-hire discount 25%', '−$300'], ['Total (server-priced)', '$900']].forEach(function (r, i) {
+        var y = 132 + i * 22, last = i === 2;
+        if (last) s += rect(356, y - 6, 244, 1, W(.1));
+        s += T(356, y + 8, r[0], 9.5, last ? W(.92) : W(.6), { w: last ? 600 : 400 }) + T(600, y + 8, r[1], 10, last ? c.acc : W(.75), { a: 'end', mono: 1, w: last ? 700 : 500 });
+      });
+      [['Call ingested once', 'idempotent'], ['Paid via Stripe', 'signed webhook'], ['Driver assigned', 'M. Torres · 6:15 PM']].forEach(function (st, i) {
+        var y = 214 + i * 40;
+        s += rect(356, y, 244, 32, W(.03), 8, stroke(W(.08))) + circle(372, y + 16, 7, OK) + I('check', 367, y + 11, 10, dark, 3)
+          + T(386, y + 14, st[0], 10, W(.9), { w: 600 }) + T(386, y + 26, st[1], 8.5, W(.45), { mono: 1 });
+      });
+      return s;
+    },
+
     /* Hotel PMS: bed-level reservation timeline with a blocked overlap, free beds shared to WhatsApp */
     riwaq: function (c) {
       var s = win(c, 26, 30, 588, 304, 'Riwaq PMS · Reservations'), dark = '#04140d', x0 = 130, cw = 68;
@@ -253,6 +287,43 @@
         s += T(464, y + 4, st[0], 10.5, done || now ? W(.92) : W(.45), { w: now ? 600 : 500 })
           + T(464, y + 18, st[1], 8.5, now ? WARN : W(.4), { mono: !now });
       });
+      return s;
+    },
+
+    /* eSIM store: the money-safe order pipeline, a three-state provisioning outcome and the delivered QR */
+    yelo: function (c) {
+      var s = win(c, 26, 30, 400, 330, 'Yelo · Order #YE-20418'), dark = '#1a1604';
+      s += T(42, 78, 'Japan · 10 GB · 15 days', 13, W(.95), { w: 600 }) + T(42, 94, 'Paid via Paddle · fulfilment pipeline', 9, W(.45));
+      [['Webhook signature verified', 1], ['Matches checkout intent', 1], ['Order created once (idempotent)', 1], ['Provider locked to order', 1], ['Provisioning · attempt 2 of 3', 2]].forEach(function (st, i) {
+        var y = 116 + i * 34, done = st[1] === 1;
+        s += rect(42, y, 368, 26, done ? W(.03) : c.A(.1), 7, stroke(done ? W(.08) : c.A(.5)));
+        s += circle(58, y + 13, 7, done ? OK : c.A(.25), done ? '' : stroke(c.acc, 1.5));
+        if (done) s += I('check', 53, y + 8, 10, '#06231a', 3);
+        else s += anim(c, '<circle cx="58" cy="' + (y + 13) + '" r="7" fill="none"' + stroke(c.acc) + '><animate attributeName="r" values="7;12" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values=".8;0" dur="1.6s" repeatCount="indefinite"/></circle>');
+        s += T(74, y + 17, st[0], 10, done ? W(.85) : W(.95), { w: done ? 500 : 600 });
+      });
+      s += T(42, 302, 'OUTCOME', 8, W(.4), { mono: 1, ls: 1.5 });
+      var x = 42;
+      [['Provisioned', OK, 0], ['Failed', BAD, 0], ['Unknown → reconcile', WARN, 1]].forEach(function (o) {
+        var w = o[0].length * 5.9 + 24;
+        s += rect(x, 312, w, 22, o[2] ? 'rgba(251,191,36,.12)' : W(.03), 11, stroke(o[2] ? o[1] : W(.12), 1, o[2] ? '3 3' : ''))
+          + circle(x + 11, 323, 3.5, o[1]) + T(x + 19, 327, o[0], 9.5, o[2] ? WARN : W(.6), { w: o[2] ? 600 : 500 });
+        x += w + 8;
+      });
+
+      s += card(c, 444, 54, 172, 300);
+      s += T(530, 80, 'Your eSIM is ready', 11, W(.95), { a: 'middle', w: 600 }) + T(530, 95, 'Signed link · valid 7 days', 8.5, W(.45), { a: 'middle' });
+      s += rect(474, 108, 112, 112, '#f5f3ea', 10);
+      var cells = [0x7f, 0x41, 0x5d, 0x5d, 0x5d, 0x41, 0x7f], seed = 7;
+      for (var r = 0; r < 13; r++) for (var q = 0; q < 13; q++) {
+        var finder = (r < 7 && q < 7) || (r < 7 && q > 5) || (r > 5 && q < 7), on;
+        if (finder) { var rr = r > 5 ? r - 6 : r, qq = q > 5 ? q - 6 : q; on = rr < 7 && qq < 7 && (cells[rr] >> (6 - qq)) & 1; }
+        else { seed = (seed * 37 + 11) % 101; on = seed % 3 === 0; }
+        if (on) s += rect(480 + q * 7.7, 114 + r * 7.7, 7.2, 7.2, '#111');
+      }
+      s += T(530, 244, 'Scan to install', 10, W(.85), { a: 'middle', w: 600 }) + T(530, 259, 'Activates on arrival', 8.5, W(.45), { a: 'middle' });
+      s += rect(462, 280, 136, 26, c.acc, 8) + T(530, 297, 'Add to phone', 10, dark, { a: 'middle', w: 700 });
+      s += T(530, 330, 'Delivered by email', 8.5, W(.4), { a: 'middle' });
       return s;
     },
 
@@ -480,7 +551,8 @@
     var inner = scene ? scene(c) : titleCard(c, project);
     /* The case-study banner is 21:9; widen the canvas so nothing gets cropped */
     var vb = suffix === 'page' ? '-140 0 920 400' : '0 0 640 400';
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + vb + '" preserveAspectRatio="xMidYMid slice" role="img" aria-label="' + esc(project.name) + '" font-family="' + SANS + '">'
+    /* direction="ltr": scenes are laid out left-to-right, so text anchors must not flip on the Arabic pages */
+    return '<svg xmlns="http://www.w3.org/2000/svg" direction="ltr" viewBox="' + vb + '" preserveAspectRatio="xMidYMid slice" role="img" aria-label="' + esc(project.name) + '" font-family="' + SANS + '">'
       + '<defs>'
       + '<radialGradient id="' + id + '-g1" cx="50%" cy="0%" r="75%"><stop offset="0" stop-color="' + c.acc + '" stop-opacity=".32"/><stop offset="1" stop-color="' + c.acc + '" stop-opacity="0"/></radialGradient>'
       + '<radialGradient id="' + id + '-g2" cx="95%" cy="100%" r="55%"><stop offset="0" stop-color="' + c.acc + '" stop-opacity=".14"/><stop offset="1" stop-color="' + c.acc + '" stop-opacity="0"/></radialGradient>'

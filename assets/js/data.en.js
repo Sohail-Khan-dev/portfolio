@@ -429,6 +429,123 @@ window.SITE = {
       }
     },
     {
+      id: 'a2z',
+      name: 'A2Z Voice Booking',
+      label: 'AI Voice Agent',
+      role: 'Platform Engineer',
+      cats: ['ai', 'saas'],
+      hue: 140,
+      tagline: 'An AI phone agent for a 24/7 US chauffeur service: calls become priced, paid and dispatched bookings, with server-side pricing, signed webhooks, and no booking created from an incomplete call.',
+      stack: ['Laravel 13', 'Filament 4', 'PostgreSQL 18', 'Vapi + Claude Haiku 4.5', 'Stripe Checkout', 'Google Maps', 'Sanctum', 'Pest 4'],
+      links: [{ label: 'car-rental.kodeking.net', url: 'https://car-rental.kodeking.net' }],
+
+      /* Full 6-part case study. Built at KodeKing for A2Z Black Car Service; metrics trace to the test run, git and deploy history. */
+      cs: {
+        role: 'Built at KodeKing for A2Z Black Car Service. Working with AI coding agents under my direction, I’m the sole author of the application platform: the Laravel backend, the Filament admin and dispatch console, Stripe payments, the call-ingestion pipeline, the driver and customer APIs and the CI/CD, plus the Expo mobile apps for drivers and customers. A teammate designed the voice agent itself: its persona, prompt and assistant configuration.',
+        glance: [
+          ['Product', 'Voice-to-booking platform: an AI phone agent takes reservations, and the platform prices them, takes payment and assigns a driver'],
+          ['Built for', 'Callers booking rides, dispatchers and admins, drivers on mobile, and a super admin for future white-label tenants'],
+          ['Timeline', 'Jun → Jul 2026 · first version live in 11 days · 5 merged PRs'],
+          ['AI layer', 'Vapi-hosted agent on Claude Haiku 4.5, Deepgram speech-to-text, tuned turn-taking'],
+          ['Status', 'Live: public booking site, admin and dispatch console, driver and customer APIs']
+        ],
+        problem: 'A 24/7 chauffeur service needs every call answered and booked without a person on the phone, and every confirmed ride on its way to a driver automatically. Until now the owner and dispatcher took calls around the clock and re-keyed each booking into a schedule.',
+        blockers: [
+          { t: 'Calls at every hour', d: 'Callers want a quote and a confirmed booking in one call, day or night.' },
+          { t: 'Re-keying every booking', d: 'Each phone booking had to be typed into the schedule by hand before anyone could dispatch it.' },
+          { t: 'Fixed business rules', d: 'A 4-hour minimum, hourly rates per vehicle class, 25% off long Sprinter hires and 12-hour free cancellation must be applied the same way every time.' }
+        ],
+        user: 'The owner and dispatcher who answer calls around the clock; callers booking sedans, SUVs and Sprinters across New York, New Jersey and the Tri-State area; and drivers who need their assignments without phone calls from dispatch.',
+
+        arch: {
+          flows: [
+            { label: 'Voice path · call to booking', stages: [
+              { k: 'Call', t: 'AI phone agent (Vapi)', items: ['Speech-to-text, Claude Haiku 4.5, text-to-speech', 'No tools: it can’t change anything during the call', 'Ends with a structured booking report'] },
+              { k: 'Ingest', t: 'Signed webhook + ingestor', hot: true, items: ['Token-authenticated webhook; one ingestor for both extraction routes', 'One transaction, idempotent on provider and call ID', 'Transcript, raw payload and recording kept as evidence'],
+                aside: { t: 'Dispatcher review', d: 'Incomplete extractions never create bookings; they wait for a dispatcher behind a confirmation step' } },
+              { k: 'Price', t: 'Server-side pricing', items: ['Every booking re-priced from the client’s rules', 'The price the model speaks is never stored', 'Location-based fares wait for a dispatcher'] }
+            ] },
+            { label: 'Payment path · paid to dispatched', stages: [
+              { k: 'Pay', t: 'Stripe Checkout', items: ['Hosted payment page; the agent never takes card numbers', 'Checkout refuses a zero total'] },
+              { k: 'Settle', t: 'Signed Stripe webhook', hot: true, items: ['Only the verified webhook marks a booking paid', 'Already-paid bookings are skipped'] },
+              { k: 'Dispatch', t: 'Auto-assignment', items: ['First free driver from the schedule', 'Drivers see trips in a tenant-scoped mobile API with a server-enforced status machine'] }
+            ] }
+          ],
+          bus: 'every booking is tenant-scoped',
+          store: { t: 'PostgreSQL 18 · tenant ID on every row', items: ['Calls with full transcript and payload', 'Customers and bookings', 'Drivers, vehicles and schedules'] },
+          caption: 'The model talks; the platform decides. The hosted voice agent has no tools, so all booking logic runs after the call in a deterministic Laravel pipeline: validate, store the evidence, re-price on the server, and only then take payment and dispatch. Even a prompt injection on the call can’t create a booking on its own terms.'
+        },
+
+        decisions: [
+          { t: 'When to extract the booking', c: 'After the call, from the agent’s structured end-of-call analysis', o: 'Live tool calls into a booking API during the call',
+            w: 'No in-call tools means no in-call side effects to secure, and it shipped in days.', x: 'The agent can’t check live availability or confirm during the call; incomplete calls need a person.' },
+          { t: 'Who computes the price', c: 'A deterministic pricing service re-prices every booking', o: 'Trusting the total the model speaks',
+            w: 'Prices must be exact and auditable, so the model’s number is never stored.', x: 'Rate rules live in both the prompt and the code, so they can drift.' },
+          { t: 'Two routes, one ingestor', c: 'Both extraction routes feed one ingestor', o: 'A separate pipeline per route',
+            w: 'One place for idempotency, evidence storage and booking rules.', x: 'The two routes validate input with different strictness.' },
+          { t: 'Sync vs queued ingestion', c: 'Synchronous ingestion inside a database transaction', o: 'A Redis queue and worker',
+            w: 'The end-of-call webhook is off the live audio path, so callers never wait on it, and there’s no worker to run.', x: 'No retry or backoff inside the app.' },
+          { t: 'Voice model', c: 'Claude Haiku 4.5 on Vapi, temperature 0.3, short replies', o: 'Larger models or other providers',
+            w: 'A small, fast model suits live turn-taking, and a low temperature keeps quotes consistent.', x: 'No measured comparison of quality or latency yet.' },
+          { t: 'Payments', c: 'Stripe hosted Checkout, with the signed webhook as the only source of truth', o: 'Embedded card fields, card on file or Square',
+            w: 'Keeps the platform in the lightest PCI scope (SAQ-A), and the agent is told never to take card numbers.', x: 'Square, Zelle and card on file aren’t built yet.' },
+          { t: 'Multi-tenancy', c: 'Shared database with a tenant ID and a global scope, set from the signed-in user', o: 'Database row-level security, or a database per tenant',
+            w: 'A white-label rollout only needs domain-based tenant resolution on top.', x: 'Isolation lives in the application layer.' },
+          { t: 'Driver matching', c: 'Schedule-based availability, first free driver', o: 'Nearest driver by live GPS',
+            w: 'Schedules work today; live GPS arrives with the driver app.', x: 'Not always the closest driver.' }
+        ],
+
+        security: [
+          { t: 'Tenant isolation', items: ['Tenant scope on every operational model, set from the signed-in admin, driver or customer', 'Super-admin and tenant-admin panels kept separate, with tests', 'Drivers and customers reach only their own records; anything else returns 404'] },
+          { t: 'Signed integrations', items: ['Voice webhooks authenticated by token, and rejected without one in production', 'Outbound dispatch requests signed with HMAC-SHA256', 'Stripe webhooks signature-verified'] },
+          { t: 'Human in the loop', items: ['Incomplete call extractions never create bookings', 'Dispatcher actions behind a confirmation step', 'Location-based fares need a person before payment; checkout refuses a zero total'] },
+          { t: 'Money safety', items: ['Server-side pricing on every booking', 'Only the signed Stripe webhook marks a booking paid; already-paid bookings are skipped', 'Verified webhooks acknowledged quickly, to avoid retry storms'] },
+          { t: 'Data integrity', items: ['Idempotent call ingestion with a unique provider and call ID index', 'Row lock on the manual create-booking action', 'Full call evidence kept: transcript, raw payload, parsed output and recording'] },
+          { t: 'Prompt-injection containment', items: ['The voice agent has no tools and executes nothing', 'Extracted fields allowlist-validated on the agent-host route', 'Bookings start as pending and are re-priced on the server'] }
+        ],
+
+        limits: [
+          { l: 'Deploys run on every push with no test gate', n: 'A test and lint job before deploy, plus a database backup before migrations' },
+          { l: 'No audit trail or booking status history', n: 'An append-only booking-events table' },
+          { l: 'The agent can’t check availability or confirm during the call', n: 'Read-only quote and availability tools backed by the same services' },
+          { l: 'Dispatch takes the first free driver, not the nearest', n: 'GPS-based matching once the driver app reports location' },
+          { l: 'Pricing rules live in both the prompt and the code', n: 'Generate the prompt’s rate block from the pricing service' },
+          { l: 'English only and US-first, with no data-residency controls', n: 'Translations, RTL layout and region-pinned hosting per tenant' }
+        ],
+
+        outcomes: [
+          { v: '117 / 117', l: 'tests passing with 506 assertions', e: 'test run, 20 Oct 2026' },
+          { v: '64 → 117', l: 'tests as ingestion, payments and dispatch landed', e: 'project log and test run, Jun – Oct 2026' },
+          { v: '11 days', l: 'from an empty repo to a live platform with voice ingestion, payments and dispatch', e: 'git history, 23 Jun – 3 Jul 2026' },
+          { v: '15 in a row', l: 'green deploys after day-one server setup, about a minute each', e: 'GitHub Actions history' },
+          { v: '0', l: 'bookings created from an incomplete call: they wait for a dispatcher', e: 'ingestion tests' },
+          { v: '4', l: 'integrations: Vapi, the agent host, Stripe and Google Maps', e: 'integration code' }
+        ],
+        outcomesNote: 'These are engineering numbers. Call-to-booking conversion, the share of calls needing review, booking-to-paid conversion, cost per call and dispatcher time saved aren’t measured yet. Each can be computed from tables the platform already writes, and will be published with the client’s permission once measured.',
+
+        region: {
+          t: 'Regional readiness',
+          items: [
+            'US-first: USD pricing, US phone formats, a New York, New Jersey and Tri-State service area, and a PCI SAQ-A payment design.',
+            'White-label ready in structure: tenants with their own domain and settings, per-tenant branding in the admin, and an env-driven business identity.',
+            'Speech-to-text runs in multilingual mode, but Arabic calls haven’t been tested, and the interface and prompt are English-only.',
+            'A Gulf deployment would add translations, an RTL layout, local currency formatting and region-pinned hosting.'
+          ]
+        },
+
+        links: [
+          { label: 'car-rental.kodeking.net', url: 'https://car-rental.kodeking.net', d: 'Live booking site: fleet, pricing rules and booking form' },
+          { label: 'car-rental.kodeking.net/up', url: 'https://car-rental.kodeking.net/up', d: 'Live health endpoint' }
+        ],
+        verify: [
+          'A demo video on request: a test call, its record with transcript and audio, “Create booking”, a Stripe test payment and the driver assignment.',
+          'A demo mode moves seeded drivers on the live map without the driver app, on staging only.',
+          'Code excerpts with the client’s approval: the idempotent ingestor, the webhook-driven payment flow, tenant isolation and the driver status machine.',
+          'The repository is private; a walkthrough or temporary access is available on request.'
+        ]
+      }
+    },
+    {
       id: 'riwaq',
       name: 'Riwaq Hotel PMS',
       label: 'Hospitality SaaS',
@@ -696,6 +813,127 @@ window.SITE = {
           'Recorded walkthrough on request: an AI search with follow-ups (“cheaper”, “add Spain”), a provider sync in the admin dashboard and the AI import preview-then-commit flow.',
           'Code excerpts on request, with the owner’s approval: the affiliate guard, the content hash, the grounded query builder and the sync upsert.',
           'The 28-test run log and the zero-error typecheck output.'
+        ]
+      }
+    },
+    {
+      id: 'yelo',
+      name: 'Yelo eSIM',
+      label: 'Travel eSIM Store',
+      role: 'Integration Engineer',
+      status: 'Pre-launch',
+      cats: ['saas', 'ops'],
+      hue: 52,
+      tagline: 'A travel eSIM storefront for 60+ countries where money moves exactly once: signed Paddle webhooks, intent-checked idempotent fulfilment, two supplier adapters with lost-reply recovery, and reconciliation sweeps that never buy a second eSIM.',
+      stack: ['Laravel 13', 'PHP 8.4', 'Laravel Cashier (Paddle)', 'Blade + vanilla JS', 'Tailwind CSS 4', 'MySQL', 'PHPUnit 12', 'Cloudflare'],
+      links: [{ label: 'yeloesim.com', url: 'https://yeloesim.com' }],
+
+      /* Full 6-part case study. Client project; storefront live, real supplier and live payments pending. */
+      cs: {
+        role: 'A client project. I joined an existing codebase as the integration and hardening engineer and, working with AI coding agents under my review, built the money and supplier layers: Paddle payments and fulfilment end to end, two eSIM supplier adapters behind one contract, catalogue mapping, test-safety guards, the move to MySQL, the CI-gated deploy workflow and the SEO and answer-engine files. A teammate built the storefront, the admin and the guard-railed AI assistant; I integrated into them.',
+        glance: [
+          ['Product', 'Storefront for prepaid travel eSIMs: country, regional, global and unlimited plans, a QR code delivered by email, an admin panel and a partner program'],
+          ['Built for', 'Travellers buying data before a trip, the store operator, and affiliate partners'],
+          ['Timeline', 'Aug → Oct 2026 · 6 merged PRs'],
+          ['Integrations', 'Paddle (merchant of record), eSIM Go and a second supplier, Google Gemini, a Cloudflare Worker for mail'],
+          ['Status', 'Storefront live; real-supplier go-live and live payments pending']
+        ],
+        problem: 'Selling a travel eSIM means taking money from a traveller, buying from a wholesale supplier and emailing a QR code, all within minutes and across three systems that can each fail half-way. The real danger is money moving twice, or not at all, when a webhook, a supplier call or a model call times out.',
+        blockers: [
+          { t: 'Charged but never delivered', d: 'Paddle retries, loses or delays webhooks, and a slow supplier can time the webhook out, leaving a paid order with no eSIM.' },
+          { t: 'A timeout isn’t a failure', d: 'Treating a supplier timeout as “failed” and retrying buys a second eSIM for the same order.' },
+          { t: 'No client reference', d: 'One supplier’s API takes no client reference, so a lost reply can’t be matched back to the order that caused it.' }
+        ],
+        user: 'Travellers buying prepaid data before a trip, who keep their home SIM for calls and 2FA; the operator running orders, refunds and suppliers; and travel creators earning commission through the partner program.',
+
+        arch: {
+          flows: [
+            { label: 'Order path · checkout to QR code', stages: [
+              { k: 'Checkout', t: 'Checkout intent', items: ['Signed-in checkout, throttled per user', 'The intended plan, price, currency and buyer are stored before a Paddle transaction opens'] },
+              { k: 'Verify', t: 'Paddle webhook', hot: true, items: ['Signature-verified', 'Transaction compared with the stored intent; any mismatch is held with a critical log', 'Order created idempotently on the transaction ID'],
+                aside: { t: 'Human-only refunds', d: 'Staff record refunds behind step-up authentication; the code never calls Paddle to refund' } },
+              { k: 'Provision', t: 'Queued provisioning job', items: ['3 tries, with 10 s / 60 s / 300 s backoff', 'Provider locked to the order; every attempt recorded', 'Outcome: Provisioned, Failed or Unknown'] },
+              { k: 'Deliver', t: 'Delivery job', items: ['Emails a signed, 7-day access link with the QR code', 'Sent through a Cloudflare Worker mailer'] }
+            ] },
+            { label: 'Recovery path · scheduled sweeps', stages: [
+              { k: 'Sweep', t: 'eSIM reconcile, every 5 min', items: ['Re-checks every Unknown outcome with the supplier'] },
+              { k: 'Recover', t: 'Lost-reply recovery', hot: true, items: ['Attempt recorded before the supplier call', 'Supplier order history searched in a −2 / +15 minute window', 'Ambiguous matches left for a human'] },
+              { k: 'Settle', t: 'Paddle reconcile, hourly', items: ['Sweeps 72 hours of transactions and fulfils any that were missed'] }
+            ] }
+          ],
+          bus: 'every attempt is recorded',
+          store: { t: 'MySQL · tenant-scoped', items: ['Checkout intents and orders, unique per transaction', 'Supplier purchases: one row per attempt', 'Provider order links for recovery', 'Append-only audit log'] },
+          caption: 'Three entry points (the browser, Paddle’s webhook and cron) share one tenant-scoped Laravel core. Nothing external is touched until a policy check passes and an idempotent, queued job takes over, and every recovery path prefers “ask a human” over guessing. The guard-railed Gemini assistant on the same core was built by a teammate and ships disabled until production approval.'
+        },
+
+        decisions: [
+          { t: 'Payments', c: 'Paddle as merchant of record: one product, with prices computed per transaction', o: 'Mirroring every catalogue price into Paddle, or a cart',
+            w: 'Cards never touch the server, and there are no hundreds of price records to keep in sync.', x: 'One tax category for every eSIM, and per-transaction reporting only.' },
+          { t: 'Fulfilment trigger', c: 'Fulfil on every webhook delivery, in the controller', o: 'Cashier’s “transaction completed” event listener',
+            w: 'That event fires only the first time a transaction is seen, so a failed first attempt would never retry.', x: 'Fulfilment must be idempotent, and it is: a unique transaction ID plus create-or-first.' },
+          { t: 'Provisioning', c: 'A queued job with a three-state outcome and two reconciliation sweeps', o: 'Provisioning inside the webhook, with a yes/no success flag',
+            w: 'Paddle expects a fast response, and guessing “failed” on a timeout buys a second eSIM.', x: 'Orders can rest in Unknown until a sweep or a human resolves them, and production needs a queue worker.' },
+          { t: 'Supplier contract', c: 'A five-method adapter contract plus opt-in capabilities, built against a mock that can fail', o: 'A fourteen-method contract from the spec',
+            w: 'A contract invented against no real implementation is worse than none, and a mock that only succeeds proves nothing.', x: 'The contract grows only when a real supplier forces it.' },
+          { t: 'Lost-reply recovery', c: 'Record the attempt before calling the supplier, then search its order history in a time window', o: 'Idempotency keys (the API has none)',
+            w: 'The only safe way to match a lost reply to the right order.', x: 'Ambiguous matches stay Unknown for a human; guessing could hand one customer another’s eSIM.' },
+          { t: 'Supplier rollout', c: 'One adapter built strictly from the supplier’s public docs, a second marked provisional, production kept on the mock', o: 'Going live on assumptions',
+            w: 'Nothing in the integration is guessed, and a doctor command reports whether go-live is safe.', x: 'No revenue-bearing supplier is live yet.' },
+          { t: 'Test safety', c: 'Tests refuse to run against anything but an in-memory database, with supplier keys blanked and the mock pinned', o: 'Trusting each developer’s environment',
+            w: 'A test run must never reach a live supplier or a real database.', x: 'Tests run on SQLite while production runs MySQL, so a MySQL-only bug can slip through.' },
+          { t: 'Deploy', c: 'GitHub Actions deploys the exact commit that a green CI run validated', o: 'Manual deploys',
+            w: 'Nothing reaches production without passing tests, style checks and a full-history secret scan.', x: 'A single server, and no automated rollback yet.' }
+        ],
+
+        security: [
+          { t: 'Payment integrity', items: ['Paddle webhooks signature-verified', 'Every transaction checked against its stored checkout intent; mismatches are held, never fulfilled', 'Orders unique per transaction; refunds and chargebacks deduplicated and applied only when approved'] },
+          { t: 'Never buy twice', items: ['Provider locked to each order, with one recorded row per supplier attempt', 'Timeouts become Unknown and are never retried blind', 'Unique queued jobs, plus reconciliation every 5 minutes and every hour'] },
+          { t: 'Human approvals', items: ['Refunds recorded by staff behind step-up authentication; code never refunds', 'Supplier mappings created disabled and switched on by a person', 'Assistant actions need a second, server-checked confirmation turn'] },
+          { t: 'Access control', items: ['Two-factor sign-in for admins, plus password step-up for refunds, staff and supplier changes', 'Role-based permissions per tenant on every admin route', 'Tenant scoping that fails closed, restored inside queued jobs'] },
+          { t: 'Audit and privacy', items: ['Append-only audit log with a read-only admin screen', 'Chat transcripts never stored; tool audits keep argument names only', 'Cookieless first-party analytics with a daily-rotating visitor hash'] },
+          { t: 'Delivery pipeline', items: ['CI runs style checks, the full test suite, a build and a full-history secret scan', 'Deploy ships only the commit a green CI run validated', 'Security headers, including a content security policy, nosniff and a strict referrer policy'] }
+        ],
+
+        limits: [
+          { l: 'No real supplier is live; production runs the mock', n: 'Fund the supplier account, make one sandbox purchase, then switch it on' },
+          { l: 'The AI assistant ships disabled', n: 'Paid model tier, budgets and a live evaluation, then a staged rollout' },
+          { l: 'Tests run on SQLite while production runs MySQL', n: 'A MySQL service in the CI test job' },
+          { l: 'Nothing alerts on exhausted queue jobs', n: 'Failure handlers plus a scheduled check on failed jobs' },
+          { l: 'Audit-log immutability is enforced only in the application', n: 'A database trigger or a hash chain' },
+          { l: 'A single server with no automated rollback', n: 'Atomic release directories with a symlink switch' }
+        ],
+
+        outcomes: [
+          { v: '655 / 655', l: 'tests passing with 3,434 assertions', e: 'test run, 21 Oct 2026' },
+          { v: '526 → 655', l: 'tests between August and October as payments and suppliers landed', e: 'test history, Aug – Oct 2026' },
+          { v: '37 / 37', l: 'agent-guardrail self-test checks passing: 20 blocked, 17 allowed', e: 'guard self-test, 21 Oct 2026' },
+          { v: '0', l: 'refunds executed by code: every refund is recorded by a person', e: 'refund flow and its tests' },
+          { v: '72 h', l: 'of Paddle transactions swept every hour, so no paid order is missed', e: 'reconciliation schedule' },
+          { v: '5 min', l: 'between sweeps that resolve Unknown supplier outcomes', e: 'reconciliation schedule' }
+        ],
+        outcomesNote: 'These are engineering and safety numbers. There are no traffic, order, revenue, uptime or latency figures yet, because live payments and the real supplier aren’t switched on. The order funnel, fulfilment time and reconcile rate can all be measured from tables the app already writes, and will be published with a date once it takes real orders.',
+
+        region: {
+          t: 'Regional readiness',
+          items: [
+            'Destinations include the UAE, Saudi Arabia and Turkey, alongside the US, UK, Japan and Europe.',
+            'Paddle, as merchant of record, collects VAT and sales tax per jurisdiction; prices are in USD only today.',
+            'English only, with no right-to-left layout yet; Tailwind 4’s logical properties keep an Arabic edition mostly a copy and QA job.',
+            'Order data stays on the store’s own server, and assistant text is redacted before it reaches the model provider.'
+          ]
+        },
+
+        links: [
+          { label: 'yeloesim.com', url: 'https://yeloesim.com', d: 'The live storefront' },
+          { label: 'yeloesim.com/destinations', url: 'https://yeloesim.com/destinations', d: 'Country, regional and global plan catalogue' },
+          { label: 'yeloesim.com/llms.txt', url: 'https://yeloesim.com/llms.txt', d: 'Answer-engine summary of the store' },
+          { label: 'yeloesim.com/up', url: 'https://yeloesim.com/up', d: 'Live health endpoint' }
+        ],
+        verify: [
+          'A recorded walkthrough of a sandbox purchase on request: destination page, Paddle checkout, order email, provisioning job and the eSIM page with its QR code.',
+          'The whole order flow runs on the built-in mock supplier, failure scenarios included, so it can be shown without a live supplier.',
+          'Code excerpts with the client’s approval: Paddle fulfilment, the supplier adapter contract and the reconciliation schedule.',
+          'The repository is private; time-boxed read-only access for a named reviewer on request.'
         ]
       }
     },
