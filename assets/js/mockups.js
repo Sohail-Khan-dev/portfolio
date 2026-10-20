@@ -191,6 +191,71 @@
       return s;
     },
 
+    /* Hotel PMS: bed-level reservation timeline with a blocked overlap, free beds shared to WhatsApp */
+    riwaq: function (c) {
+      var s = win(c, 26, 30, 588, 304, 'Riwaq PMS · Reservations'), dark = '#04140d', x0 = 130, cw = 68;
+      s += T(42, 80, 'Reservations', 13, W(.95), { w: 600 }) + T(136, 80, '12–18 Oct', 10, W(.45));
+      s += rect(522, 66, 76, 22, c.acc, 7) + T(560, 81, '+ Booking', 9.5, dark, { a: 'middle', w: 700 });
+      s += rect(x0 + 2 * cw, 96, cw, 224, c.A(.06));
+      ['SUN 12', 'MON 13', 'TUE 14', 'WED 15', 'THU 16', 'FRI 17', 'SAT 18'].forEach(function (d, i) {
+        s += T(x0 + i * cw + cw / 2, 110, d, 8.5, i === 2 ? c.acc : W(.45), { a: 'middle', mono: 1, w: i === 2 ? 600 : 400 });
+        s += rect(x0 + i * cw, 96, 1, 224, W(.05));
+      });
+      ['101 · Bed A', '101 · Bed B', '102 · Bed A', '203 · Bed A', '203 · Bed B', '305 · Bed C'].forEach(function (r, i) {
+        var y = 120 + i * 32; s += rect(42, y, 564, 1, W(.06)) + T(42, y + 20, r, 10, W(.75));
+      });
+      [[0, 0, 3, 'A. Rahman', 'in'], [0, 4, 3, 'M. Saleh', 'ok'], [1, 1, 4, 'K. Haddad', 'ok'], [2, 0, 2, 'N. Otaibi', 'in'], [2, 3, 3, 'J. Park', 'pend'],
+        [3, 1, 5, 'S. Nair', 'ok'], [4, 1, 2, 'L. Costa', 'in'], [4, 4, 2, 'F. Omar', 'ok'], [5, 5, 2, 'R. Aziz', 'pend']].forEach(function (b) {
+        var x = x0 + b[1] * cw + 3, y = 120 + b[0] * 32 + 5, w = b[2] * cw - 6;
+        if (b[4] === 'in') s += rect(x, y, w, 22, c.acc, 6) + T(x + 10, y + 15, b[3], 9.5, dark, { w: 600 });
+        else if (b[4] === 'ok') s += rect(x, y, w, 22, c.A(.18), 6, stroke(c.A(.55))) + T(x + 10, y + 15, b[3], 9.5, W(.9));
+        else s += rect(x, y, w, 22, 'rgba(251,191,36,.1)', 6, stroke('rgba(251,191,36,.6)', 1, '3 3')) + T(x + 10, y + 15, b[3], 9.5, WARN);
+      });
+      var gx = x0 + 4 * cw + 3, gy = 120 + 3 * 32 + 5;
+      s += rect(gx, gy, 2 * cw - 6, 22, '#2a1114', 6, stroke(BAD, 1.2, '4 3')) + I('lock', gx + 8, gy + 5, 12, BAD, 2) + T(gx + 24, gy + 15, 'Overlap blocked', 9, BAD, { w: 600 });
+      s += circle(46, 350, 4, c.acc) + T(56, 353.5, 'Checked in', 9, W(.55)) + circle(130, 350, 4, c.A(.3), stroke(c.A(.6))) + T(140, 353.5, 'Confirmed', 9, W(.55))
+        + circle(212, 350, 4, 'none', stroke(WARN, 1, '2 2')) + T(222, 353.5, 'Pending', 9, W(.55));
+
+      s += card(c, 404, 254, 210, 140);
+      s += circle(424, 276, 10, '#25d366') + I('chat', 418, 270, 12, '#fff', 2.2) + T(442, 280, 'Free beds · share', 10, W(.9), { w: 600 });
+      s += rect(418, 294, 182, 62, '#13352a', 10) + T(430, 312, 'Free 14–17 Oct', 10, W(.95), { w: 600 })
+        + T(430, 327, '2 beds : 3 rooms', 9, W(.7), { mono: 1 }) + T(430, 341, '1 bed : 2 rooms', 9, W(.7), { mono: 1 });
+      s += rect(418, 364, 182, 22, '#25d366', 7) + T(509, 379, 'Open in WhatsApp', 9.5, '#052e16', { a: 'middle', w: 700 });
+      return s;
+    },
+
+    /* Bookkeeping: a multi-currency customer ledger, and a container moving through port stages */
+    khaatabook: function (c) {
+      var s = win(c, 26, 30, 382, 330, 'KhaataBook · Customer ledger'), dark = '#1a0716';
+      s += T(42, 78, 'Karim Traders', 13, W(.95), { w: 600 }) + T(42, 94, 'Customer khaata · 4 currencies', 9, W(.45));
+      [['PKR', '1,284,500'], ['USD', '3,920'], ['AED', '12,400'], ['RMB', '8,150']].forEach(function (b, i) {
+        var x = 42 + i * 88, on = i === 0;
+        s += rect(x, 106, 80, 40, on ? c.A(.16) : W(.04), 8, stroke(on ? c.A(.5) : W(.1)))
+          + T(x + 10, 121, b[0], 8.5, on ? c.acc : W(.5), { mono: 1, w: 600 }) + T(x + 10, 138, b[1], 11, W(.92), { w: 600 });
+      });
+      s += T(42, 168, 'DATE', 8, W(.4), { mono: 1, ls: 1 }) + T(104, 168, 'ENTRY', 8, W(.4), { mono: 1, ls: 1 }) + T(392, 168, 'AMOUNT', 8, W(.4), { mono: 1, ls: 1, a: 'end' });
+      [['18 Oct', 'Cheque received', '+250,000', OK], ['17 Oct', 'Clearing · MSKU 482193', '−86,400', BAD], ['16 Oct', 'Advance (USD)', '+1,200', OK],
+        ['15 Oct', 'Cash passed to Ali Bros', '40,000', WARN], ['14 Oct', 'Detention · 3 days', '−18,000', BAD]].forEach(function (r, i) {
+        var y = 178 + i * 30;
+        s += rect(42, y, 350, 1, W(.06)) + T(42, y + 19, r[0], 9.5, W(.5), { mono: 1 }) + T(104, y + 19, r[1], 10, W(.85))
+          + T(392, y + 19, r[2], 10, r[3], { a: 'end', mono: 1, w: 600 });
+      });
+      s += rect(42, 330, 118, 20, c.A(.18), 6, stroke(c.A(.5))) + I('doc', 49, 333, 13, c.acc, 2) + T(68, 344, 'PDF statement', 9, c.acc, { w: 600 });
+
+      s += card(c, 424, 54, 192, 300);
+      s += T(440, 78, 'CONTAINER', 8, W(.45), { mono: 1, ls: 1.5 }) + T(440, 96, 'MSKU 482193-1', 12, W(.95), { mono: 1, w: 600 });
+      [['BL received', '02 Oct', 1], ['Telex released', '05 Oct', 1], ['Port arrival', '09 Oct', 1], ['Dry port in', '4 free days left', 2], ['Delivered', '—', 0]].forEach(function (st, i, all) {
+        var y = 126 + i * 42, done = st[2] === 1, now = st[2] === 2;
+        if (i < all.length - 1) s += rect(447, y + 7, 2, 35, done ? c.acc : W(.12));
+        s += circle(448, y, 7, done ? c.acc : (now ? c.A(.22) : PANEL), stroke(done || now ? c.acc : W(.25), 1.5));
+        if (done) s += I('check', 443, y - 5, 10, dark, 3);
+        if (now) s += anim(c, '<circle cx="448" cy="' + y + '" r="7" fill="none"' + stroke(c.acc) + '><animate attributeName="r" values="7;13" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values=".8;0" dur="1.6s" repeatCount="indefinite"/></circle>');
+        s += T(464, y + 4, st[0], 10.5, done || now ? W(.92) : W(.45), { w: now ? 600 : 500 })
+          + T(464, y + 18, st[1], 8.5, now ? WARN : W(.4), { mono: !now });
+      });
+      return s;
+    },
+
     /* eSIM comparison: country plans ranked, an AI answer grounded in the catalog, coverage stats */
     esim: function (c) {
       var s = win(c, 30, 32, 418, 330, 'esimzee.com/japan');
@@ -222,68 +287,6 @@
       s += rect(524, fy, 20, 13, '#8a1538') + rect(524, fy, 7, 13, '#fff');
       s += rect(550, fy, 20, 13, '#006c35') + rect(555, fy + 5.5, 10, 1.6, '#fff');
       s += rect(576, fy, 20, 13, '#e30a17') + circle(584, fy + 6.5, 3.6, '#fff') + circle(585.2, fy + 6.5, 2.9, '#e30a17');
-      return s;
-    },
-
-    /* ReAct loop: thought → action → observation → verify, with the matching trace */
-    slopsense: function (c) {
-      var cx = 168, cy = 208, R = 104, s = '';
-      s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="none"' + stroke(c.A(.4), 1.5, '4 7') + '>'
-        + anim(c, '<animate attributeName="stroke-dashoffset" values="0;-44" dur="2.4s" repeatCount="indefinite"/>') + '</circle>';
-      [-45, 45, 135, 225].forEach(function (d) {
-        var a = d * Math.PI / 180;
-        s += '<path d="M-4 -4.5L4 0L-4 4.5z" fill="' + c.acc + '" transform="translate(' + n(cx + R * Math.cos(a)) + ' ' + n(cy + R * Math.sin(a)) + ') rotate(' + (d + 90) + ')"/>';
-      });
-      s += circle(cx, cy, 50, c.A(.06)) + circle(cx, cy, 32, c.A(.16), stroke(c.acc, 1.5));
-      s += anim(c, '<circle cx="' + cx + '" cy="' + cy + '" r="32" fill="none"' + stroke(c.A(.5)) + '><animate attributeName="r" values="32;48;32" dur="3.2s" repeatCount="indefinite"/><animate attributeName="opacity" values=".8;0;.8" dur="3.2s" repeatCount="indefinite"/></circle>');
-      s += I('sparkle', cx - 12, cy - 12, 24, c.acc, 1.8);
-      s += T(cx, 154, 'AGENT', 8.5, W(.45), { a: 'middle', mono: 1, ls: 1.5 }) + T(cx, 272, 'step 3 of 8', 9, W(.45), { a: 'middle', mono: 1 });
-      [['Thought', -90], ['Action', 0], ['Observation', 90], ['Verify', 180]].forEach(function (t) {
-        var a = t[1] * Math.PI / 180, x = cx + R * Math.cos(a), y = cy + R * Math.sin(a), w = t[0].length * 6.2 + 30, on = t[0] === 'Action';
-        s += rect(x - w / 2, y - 13, w, 26, on ? '#1a0f18' : PANEL, 13, stroke(on ? c.acc : W(.18), on ? 1.5 : 1))
-          + circle(x - w / 2 + 12, y, 3, on ? c.acc : W(.35)) + T(x + 5, y + 4, t[0], 10.5, on ? W(.95) : W(.75), { a: 'middle', w: on ? 600 : 500 });
-      });
-
-      s += win(c, 318, 52, 296, 300, 'agent.trace · run 7f3a', '#090b11');
-      [['THOUGHT', c.acc, 'Need Q3 revenue by region'], ['ACTION', '#60a5fa', 'sql.query(sales, q=3)'], ['OBSERVATION', W(.45), '4 rows · EMEA missing'],
-        ['THOUGHT', c.acc, 'Retry without region filter'], ['ACTION', '#60a5fa', 'sql.query(sales, q=3, all)'], ['OBSERVATION', W(.45), '5 rows returned'],
-        ['VERIFIED', OK, 'Totals match the ledger']].forEach(function (t, i) {
-        var y = 98 + i * 33;
-        s += T(334, y, t[0], 8.5, t[1], { mono: 1, w: 600, ls: .8 }) + T(334, y + 14, t[2], 10.5, W(.8), { mono: 1 });
-      });
-      s += T(334, 338, '›', 11, c.acc, { mono: 1 }) + '<rect x="344" y="329" width="7" height="11" fill="' + c.acc + '">' + anim(c, '<animate attributeName="opacity" values="1;0;1" dur="1.1s" repeatCount="indefinite"/>') + '</rect>';
-      return s;
-    },
-
-    /* Hotel PMS: bed-level reservation timeline with a blocked overlap, WhatsApp confirmation */
-    riwaq: function (c) {
-      var s = win(c, 26, 30, 588, 304, 'Riwaq PMS · Reservations'), dark = '#04140d', x0 = 130, cw = 68;
-      s += T(42, 80, 'Reservations', 13, W(.95), { w: 600 }) + T(136, 80, '12–18 Oct', 10, W(.45));
-      s += rect(522, 66, 76, 22, c.acc, 7) + T(560, 81, '+ Booking', 9.5, dark, { a: 'middle', w: 700 });
-      s += rect(x0 + 2 * cw, 96, cw, 224, c.A(.06));
-      ['SUN 12', 'MON 13', 'TUE 14', 'WED 15', 'THU 16', 'FRI 17', 'SAT 18'].forEach(function (d, i) {
-        s += T(x0 + i * cw + cw / 2, 110, d, 8.5, i === 2 ? c.acc : W(.45), { a: 'middle', mono: 1, w: i === 2 ? 600 : 400 });
-        s += rect(x0 + i * cw, 96, 1, 224, W(.05));
-      });
-      var rooms = ['101 · Bed A', '101 · Bed B', 'Room 102', '203 · Bed A', '203 · Bed B', 'Room 305'];
-      rooms.forEach(function (r, i) { var y = 120 + i * 32; s += rect(42, y, 564, 1, W(.06)) + T(42, y + 20, r, 10, W(.75)); });
-      [[0, 0, 3, 'A. Rahman', 'in'], [0, 4, 3, 'M. Saleh', 'ok'], [1, 1, 4, 'K. Haddad', 'ok'], [2, 0, 2, 'N. Otaibi', 'in'], [2, 3, 3, 'J. Park', 'pend'],
-        [3, 1, 5, 'S. Nair', 'ok'], [4, 1, 2, 'L. Costa', 'in'], [4, 4, 2, 'F. Omar', 'ok'], [5, 5, 2, 'R. Aziz', 'pend']].forEach(function (b) {
-        var x = x0 + b[1] * cw + 3, y = 120 + b[0] * 32 + 5, w = b[2] * cw - 6;
-        if (b[4] === 'in') s += rect(x, y, w, 22, c.acc, 6) + T(x + 10, y + 15, b[3], 9.5, dark, { w: 600 });
-        else if (b[4] === 'ok') s += rect(x, y, w, 22, c.A(.18), 6, stroke(c.A(.55))) + T(x + 10, y + 15, b[3], 9.5, W(.9));
-        else s += rect(x, y, w, 22, 'rgba(251,191,36,.1)', 6, stroke('rgba(251,191,36,.6)', 1, '3 3')) + T(x + 10, y + 15, b[3], 9.5, WARN);
-      });
-      var gx = x0 + 4 * cw + 3, gy = 120 + 3 * 32 + 5;
-      s += rect(gx, gy, 2 * cw - 6, 22, '#2a1114', 6, stroke(BAD, 1.2, '4 3')) + I('lock', gx + 8, gy + 5, 12, BAD, 2) + T(gx + 24, gy + 15, 'Overlap blocked', 9, BAD, { w: 600 });
-      s += circle(46, 350, 4, c.acc) + T(56, 353.5, 'Checked in', 9, W(.55)) + circle(130, 350, 4, c.A(.3), stroke(c.A(.6))) + T(140, 353.5, 'Confirmed', 9, W(.55))
-        + circle(212, 350, 4, 'none', stroke(WARN, 1, '2 2')) + T(222, 353.5, 'Pending', 9, W(.55));
-
-      s += card(c, 404, 254, 210, 140);
-      s += circle(424, 276, 10, '#25d366') + I('chat', 418, 270, 12, '#fff', 2.2) + T(442, 280, 'WhatsApp · Send to guest', 10, W(.9), { w: 600 });
-      s += rect(418, 294, 182, 62, '#13352a', 10) + T(430, 312, 'Booking confirmed', 10, W(.95), { w: 600 })
-        + T(430, 327, 'Room 102 · 14–17 Oct · 3 nights', 9, W(.7)) + T(430, 341, '1,350 SAR incl. 15% VAT', 9, W(.7));
-      s += rect(418, 364, 182, 22, '#25d366', 7) + T(509, 379, 'Send in one click', 9.5, '#052e16', { a: 'middle', w: 700 });
       return s;
     },
 

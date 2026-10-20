@@ -312,6 +312,122 @@ window.SITE = {
       }
     },
     {
+      id: 'khaatabook',
+      name: 'KhaataBook',
+      label: 'Bookkeeping SaaS',
+      role: 'Founder & Sole Developer',
+      cats: ['saas', 'ops'],
+      hue: 330,
+      tagline: 'A multi-tenant bookkeeping and container-tracking SaaS for clearing agents and small traders: multi-currency customer ledgers, containers tracked from port to delivery, PDF reports and a customer portal. Live with 8 shops.',
+      stack: ['Laravel 12', 'PHP 8.3', 'Blade', 'Tailwind CSS 4', 'Sanctum', 'spatie/laravel-permission', 'DomPDF', 'Pest 4', 'MySQL'],
+      links: [{ label: 'khaatabook.yourailist.com', url: 'https://khaatabook.yourailist.com' }],
+
+      /* Full 6-part case study. My own SaaS, live in production; metrics trace to the test run, git history and the live host. */
+      cs: {
+        role: 'My own SaaS, built and operated solo over 12 months. I hand-wrote the foundation (the Laravel app, the container module and the deploy pipeline), then built the rest by directing and reviewing AI coding agents: the customer portal, the permission system, vouchers, and the multi-tenant rebuild with a super admin, subscriptions, renewal codes, reminders and an audit log.',
+        glance: [
+          ['Product', 'Shop-scoped ledgers (“khaata”), container tracking through port stages, PDF reports, a customer portal and a JSON API for a mobile client'],
+          ['Built for', 'Clearing agents, transporters, travel agencies, poultry traders and general traders, with five business templates'],
+          ['Users', 'Platform super admin, shop owners, shop staff, and shop customers with their own login'],
+          ['Timeline', 'Oct 2025 → Oct 2026 · 37 merged PRs'],
+          ['Status', 'Live in production with 8 shops (Oct 2026)']
+        ],
+        problem: 'A clearing agent tracks every container from port to delivery, keeps a running balance for each customer in several currencies, and sends status reports to customers. Small traders in the same market keep similar ledgers. These records typically live in paper khaata books and spreadsheets.',
+        blockers: [
+          { t: 'Containers pass through many stages', d: 'Bill-of-lading numbers, telex release, port and dry-port dates, detention and free days: each container has a lifecycle that is easy to lose track of.' },
+          { t: 'Balances in four currencies', d: 'Customers carry running balances in PKR, USD, AED and RMB, with advances, cheques, and cash passed straight from one customer to another.' },
+          { t: 'Reports every customer expects', d: 'Customers want status and balance reports, and producing them by hand eats the working day.' }
+        ],
+        user: 'Clearing agents and small trading businesses in Pakistan; the same ledger also serves transporters, poultry traders and Umrah/tour operators. As the platform operator I sell each shop a renewable plan, so the product also has to show who is expiring, record payment and block non-payers.',
+
+        arch: {
+          flows: [
+            { label: 'Request path · web app, API and customer portal', stages: [
+              { k: 'Input', t: 'Four entry points', items: ['Staff web app and customer portal', 'JSON API for the mobile client, plus a customer API'] },
+              { k: 'Gate', t: 'Auth + tenant middleware', hot: true, items: ['Rate limits, then one of four guards (session or token, staff or customer)', 'Shop membership verified and tenant set before models load', 'Expired shops and missing permissions stopped here'] },
+              { k: 'Logic', t: 'Controllers + domain services', items: ['Every model a controller receives is already scoped to the shop', 'Effective permission = user grant ∩ shop ceiling', 'PDF reports rendered on the server'] }
+            ] },
+            { label: 'Scheduled path · outside the request', stages: [
+              { k: 'Trigger', t: 'Daily scheduler', items: ['Scheduled commands guarded against overlapping runs'] },
+              { k: 'Remind', t: 'Renewal reminders', items: ['Email reminders before expiry, one per milestone', 'WhatsApp channel built, provider not yet connected'] },
+              { k: 'Protect', t: 'Encrypted backups', hot: true, items: ['Encrypted archive every 6 hours, copied off-site', 'Tiered retention: daily, weekly, monthly and yearly sets'] }
+            ] }
+          ],
+          bus: 'every row carries its shop',
+          store: { t: 'MySQL · one shared database, tenant ID on every business row', items: ['Global tenant scope on business models', 'Ledgers, containers, vouchers, renewals', 'Platform audit log'] },
+          caption: 'A server-rendered Laravel monolith with a JSON API beside it, and no AI inside the product. The tenant is set by middleware after a membership check and before route-model binding runs, so every model a controller receives is already scoped to the right shop.'
+        },
+
+        decisions: [
+          { t: 'Tenant isolation', c: 'One shared database with a tenant ID column and a global scope', o: 'A database per tenant, or database row-level security',
+            w: 'Fits shared hosting: one deploy and one migration run for every shop.', x: 'Isolation lives in application code, so tests carry the weight.' },
+          { t: 'Where the tenant comes from', c: 'Middleware sets the tenant after checking membership, before route-model binding', o: 'Trusting a tenant ID sent with the request',
+            w: 'Models arrive at controllers already scoped.', x: 'Middleware order becomes load-bearing.' },
+          { t: 'Permission model', c: 'Effective permission = user grant ∩ shop ceiling', o: 'The permission package’s “teams” mode',
+            w: 'No user belonged to more than one shop, and it avoided a large migration.', x: 'One person can’t hold different rights in two shops.' },
+          { t: 'Subscription state', c: 'Computed from the expiry date, in local time, on every read', o: 'A stored status column',
+            w: 'No status drift and no sync job to maintain.', x: 'A little computation per request, and the time-zone logic must be right.' },
+          { t: 'Expired shops', c: 'Fully blocked after a 3-day grace period', o: 'A read-only mode',
+            w: 'Fewer code paths to guard.', x: 'An expired shop can’t even print old reports.' },
+          { t: 'Reminders', c: 'Sent directly by a daily scheduled command', o: 'Queued mail',
+            w: 'Shared hosting has no guaranteed queue worker.', x: 'A slow mail server slows the scheduled run.' },
+          { t: 'Currencies', c: 'Global defaults (PKR, USD, AED, RMB) plus custom codes per shop', o: 'One global catalogue',
+            w: 'One shop’s custom currency must never appear in another’s.', x: 'Amounts store a currency code rather than a foreign key.' },
+          { t: 'QR codes', c: 'A vendored pure-PHP QR encoder', o: 'A package or an external QR API',
+            w: 'Works inside PDF rendering with no network call.', x: 'Vendored code to maintain.' }
+        ],
+
+        security: [
+          { t: 'Tenant isolation', items: ['Global tenant scope on business models; staff without a verified shop get no rows', 'Tenant set only by middleware after a membership check, on web, API and customer tokens', 'Covered by isolation, permission-ceiling, route-binding and impersonation tests'] },
+          { t: 'Access control', items: ['Separate guards for staff and customers', 'Roles and permissions intersected with a per-shop ceiling', 'Disabled users rejected at login and signed out mid-session; a password change revokes tokens and sessions'] },
+          { t: 'Subscriptions', items: ['Shops blocked after the grace period or on suspension, across web, API and customer portal', 'Renewal codes redeemed in a transaction under a row lock', 'Unique constraints stop duplicate reminders, codes and currencies'] },
+          { t: 'Audit', items: ['Platform audit log with actor, shop, event, before and after values, IP and user agent', 'Support access to a shop goes through an audited “Access” session', 'Deleting a shop requires typing its name, and is a soft delete'] },
+          { t: 'Input and web', items: ['Dedicated validation classes on write routes', 'Uploads type-checked, size-capped and stored on a private disk', 'Session-expiry recovery that keeps form input but never passwords'] },
+          { t: 'Operations', items: ['Encrypted backups every 6 hours with tiered retention', 'Health endpoint, plus a log of any request slower than 1 second', 'Scheduled jobs guarded against overlapping runs'] }
+        ],
+
+        limits: [
+          { l: 'Pushes deploy straight to production with no test gate', n: 'A test and lint job that the deploy depends on' },
+          { l: '3 of 607 tests fail on a clean run (known and tracked)', n: 'Fix them so the suite is fully green' },
+          { l: 'The audit log isn’t tamper-evident', n: 'Hash-chained rows, or logs shipped off-host' },
+          { l: 'Business records are hard-deleted', n: 'Soft deletes on transactions, customers and containers' },
+          { l: 'No error tracking or uptime monitoring', n: 'An uptime check on the health endpoint, plus error tracking' },
+          { l: 'English only; no VAT or e-invoicing', n: 'Arabic, RTL layout and tax fields before any Gulf pilot' }
+        ],
+
+        outcomes: [
+          { v: '8', l: 'shops live in production', e: 'operator count, 20 Oct 2026' },
+          { v: '604 / 607', l: 'tests passing with 3,030 assertions; the 3 failures are known and tracked', e: 'test run, 20 Oct 2026' },
+          { v: '12 months', l: 'of continuous delivery across 37 merged PRs', e: 'git history, Oct 2025 – Oct 2026' },
+          { v: '16', l: 'PDF reports: 10 container status reports, 5 standalone and 1 merged', e: 'report definitions in code' },
+          { v: '4 + custom', l: 'currencies per ledger: PKR, USD, AED and RMB, plus each shop’s own codes', e: 'currency model' },
+          { v: '6 h', l: 'between encrypted off-site backups', e: 'backup schedule' }
+        ],
+        outcomesNote: 'Uptime, latency, weekly active users, renewal revenue, churn and time saved aren’t measured yet. Each already has a source in the app (the health endpoint, the slow-request log, last-login times, renewal records) and will be published with a date once measured.',
+
+        region: {
+          t: 'Regional readiness',
+          items: [
+            'Built for Pakistan today: PKR by default, +92 phone handling for WhatsApp sharing, and renewals recorded as cash, bank transfer, JazzCash, EasyPaisa or cheque.',
+            'AED is already a built-in currency, and Umrah and tour vouchers carry a public QR verification page.',
+            'The tenancy, currency and permission layers would carry over unchanged to a Gulf rollout.',
+            'English only today; a Gulf launch would add Arabic and RTL, locale-aware number formats, VAT fields and e-invoicing.'
+          ]
+        },
+
+        links: [
+          { label: 'khaatabook.yourailist.com', url: 'https://khaatabook.yourailist.com', d: 'The live app (sign-in required)' },
+          { label: 'khaatabook.yourailist.com/up', url: 'https://khaatabook.yourailist.com/up', d: 'Live health endpoint' }
+        ],
+        verify: [
+          'Walkthrough on request: create a shop, issue a renewal, switch between owner and staff views, and show an expired shop being blocked, all on demo data.',
+          'A demo shop with fictional data and a read-only login, shared privately on request.',
+          'Code excerpts on request: the tenant scope, the permission ceiling, renewal-code redemption and the subscription access check.',
+          'The repository is private; a screen-shared code review is available on request.'
+        ]
+      }
+    },
+    {
       id: 'contextapro',
       name: 'ContextaPro',
       label: 'AI Newsroom',
@@ -437,6 +553,115 @@ window.SITE = {
           'Commented code excerpts, with the client’s approval: the SSRF guard, the prompt-injection wrapper and the job worker’s run-time permission re-check.',
           'A redacted summary of the audit findings and the commit that fixed each one.',
           'A live link will be added here once the deployment is up.'
+        ]
+      }
+    },
+    {
+      id: 'riwaq',
+      name: 'Riwaq Hotel PMS',
+      label: 'Hospitality SaaS',
+      role: 'Lead Engineer',
+      cats: ['ops', 'saas'],
+      hue: 160,
+      tagline: 'A multi-tenant reservation SaaS for Saudi hotels that sell by the bed, not the room: bed-level availability with double-booking checks, free beds shared to WhatsApp in one tap, and subscription renewals without a payment gateway.',
+      stack: ['Laravel 13', 'PHP 8.3', 'Blade + vanilla JS', 'Tailwind CSS 4', 'SQLite (WAL)', 'PHPUnit 12', 'GitHub Actions'],
+      links: [],
+
+      /* Full 6-part case study. Team project, deployed privately; metrics trace to test runs and deploy history. */
+      cs: {
+        role: 'Built by a three-person team over 95 days; I’m the main author of the deployed version. I built the multi-tenant SaaS layer (super-admin console, hotel activation, subscriptions and renewal codes), the CI/CD pipeline, reservation editing, free-bed availability with WhatsApp sharing, the CSV import, the expenses module and nearly all of the test suite. Teammates wrote the initial scaffold and core schema.',
+        glance: [
+          ['Product', 'Multi-tenant hotel reservations and operations, booked per bed inside rooms, with a super-admin console for subscriptions'],
+          ['Built for', 'Owners and front-desk staff of small Saudi hotels, plus the platform operator'],
+          ['Market', 'Saudi Arabia: SAR pricing, Riyadh time zone, optional national ID, WhatsApp-first workflows'],
+          ['Timeline', 'Jul → Oct 2026 · 95 days'],
+          ['Status', 'Deployed by CI on every push; private, with no public URL']
+        ],
+        problem: 'Many small hotels in Saudi Arabia rent rooms by the bed. A room holds two to seven beds, one booking can span beds in several rooms, and each bed carries its own agreed nightly price. Front desks juggle this in spreadsheets and answer “what’s free tomorrow?” over WhatsApp.',
+        blockers: [
+          { t: 'Double-booking in shared rooms', d: 'When the beds in one room are sold separately over overlapping dates, a spreadsheet can’t stop two guests landing on the same bed.' },
+          { t: 'Availability lives in someone’s head', d: 'Answering a WhatsApp “what’s free?” means checking every room by hand, for every date range.' },
+          { t: 'Collecting fees without a gateway', d: 'The operator has to renew hotel subscriptions where card payments aren’t practical, and pause hotels that stop paying.' }
+        ],
+        user: 'Front-desk staff answering availability questions, owners tracking expenses and revenue, and the platform operator chasing renewals. These pain points are read from the data model and the product’s own workflows; no formal user research is on record.',
+
+        arch: {
+          stages: [
+            { k: 'Input', t: 'Browser or installable PWA', items: ['Server-rendered Blade with vanilla JS', 'Service worker caches static assets only, never signed-in pages'] },
+            { k: 'Gate', t: 'Auth + tenant middleware', hot: true, items: ['Login throttled per email and IP', 'Inactive or expired hotels are signed out', 'Super admins routed to their own console'],
+              aside: { t: 'Operator approval', d: 'A self-registered hotel stays inactive until the platform operator activates it' } },
+            { k: 'Logic', t: 'Tenant controllers', items: ['Every query scoped to the signed-in hotel', 'Bookings written in a transaction, with an overlap re-check', 'Renewal codes redeemed under a row lock'] },
+            { k: 'Share', t: 'WhatsApp, user-initiated', items: ['The free-beds dialog builds the message', 'Staff choose the recipient and press send: no API, nothing automatic'] }
+          ],
+          bus: 'hotel-scoped reads and writes',
+          store: { t: 'SQLite in WAL mode · one database, hotel-scoped rows', items: ['Hotels, rooms, beds, reservations and reservation items', 'Subscription renewals and single-use codes', 'Expenses with their author'] },
+          caption: 'A server-rendered Laravel monolith with no AI in the loop. The “policy” stage is middleware plus operator activation, and the only outside hop is a WhatsApp link the user clicks. A command-line importer loads past bookings from CSV, all-or-nothing, with a dry run.'
+        },
+
+        decisions: [
+          { t: 'Inventory granularity', c: 'Per-bed reservation items, each with its own nightly price', o: 'Booking whole rooms',
+            w: 'Matches how these hotels actually sell: beds in one room go to different guests.', x: 'More rows, and more complex availability queries.' },
+          { t: 'Database', c: 'SQLite tuned with WAL journaling, a busy timeout and normal sync', o: 'Default SQLite settings, or MySQL only',
+            w: 'Fixed slow page navigation on shared hosting with no extra service to run.', x: 'One writer at a time; MySQL is documented for heavier production use.' },
+          { t: 'Hosting', c: 'Shared hosting, with assets built in CI and deployed over rsync', o: 'A VPS, containers or a PaaS',
+            w: 'The server never needs Node or Composer, so running costs stay minimal.', x: 'One host and no horizontal scaling; rollback means redeploying.' },
+          { t: 'Billing', c: 'Offline single-use renewal codes, easy to read out over the phone and redeemable without signing in', o: 'A payment gateway',
+            w: 'Fits how these hotels pay: cash or transfer, confirmed by phone or WhatsApp.', x: 'Fees are collected by hand, with no automated dunning.' },
+          { t: 'Onboarding', c: 'Self-registration creates an inactive hotel', o: 'Instant activation',
+            w: 'The operator vets every hotel before it can take bookings.', x: 'Each new hotel has to be activated by hand.' },
+          { t: 'Front end and offline', c: 'Server-rendered Blade and vanilla JS; the service worker caches static assets only', o: 'An SPA framework, or caching full pages',
+            w: 'Caching pages would store signed-in data on the device.', x: 'No offline mode, and little component reuse.' },
+          { t: 'Tenant isolation', c: 'One shared database with a hotel check in every controller, covered by cross-tenant tests', o: 'Global scopes, or a database per hotel',
+            w: 'The simplest model for a small SaaS on one host.', x: 'Isolation depends on each new query remembering the scope.' },
+          { t: 'Bulk data entry', c: 'Command-line CSV import, all-or-nothing, with a dry run', o: 'A web upload form',
+            w: 'Bad rows can’t half-load, and re-runs skip bookings already imported.', x: 'Needs shell access to the server.' }
+        ],
+
+        security: [
+          { t: 'Tenant isolation', items: ['Every read and write scoped to the signed-in hotel; another hotel’s records return 404', 'Cross-tenant tests: one hotel can’t edit or delete another’s reservations', 'Super-admin console behind its own middleware'] },
+          { t: 'Human approvals', items: ['New hotels need operator activation', 'Deleting a hotel requires typing its name', 'The last owner can’t be demoted or removed', 'WhatsApp messages are never sent automatically'] },
+          { t: 'Credentials', items: ['Passwords hashed with bcrypt', 'Login throttled per email and IP; the renewal endpoint is rate-limited', 'Environment file and deploy secrets kept out of git'] },
+          { t: 'Failure handling', items: ['Booking writes are transactional, with a double-booking re-check inside the transaction', 'Single-use codes redeemed under a row lock, safe under concurrent attempts', 'CSV import rolls back the whole file on any error and skips rows already imported'] },
+          { t: 'Audit trail', items: ['Subscription history: who renewed, the old and new dates, and the amount', 'Renewal codes record who issued and who redeemed them, and when', 'Every expense records its author'] },
+          { t: 'Deploys and web', items: ['The deploy checks its target and the server environment before touching files, one deploy at a time', 'CSRF protection on every form; availability data marked no-store', 'Health endpoint for monitoring'] }
+        ],
+
+        limits: [
+          { l: 'The deploy doesn’t run the test suite first', n: 'A test job (PHPUnit and Node) that the deploy depends on' },
+          { l: 'Reservations are hard-deleted, with no change history', n: 'Soft deletes and an append-only audit table' },
+          { l: 'VAT is stored per hotel but not applied; no e-invoicing', n: 'Compute VAT on totals and evaluate ZATCA Phase 2' },
+          { l: 'English only, left-to-right', n: 'An Arabic edition with an RTL layout' },
+          { l: 'No documented backup and restore', n: 'Scheduled off-host database dumps with a tested restore' },
+          { l: 'No production metrics yet', n: 'An uptime monitor on the health endpoint, plus request timing' }
+        ],
+
+        outcomes: [
+          { v: '52 / 52', l: 'PHPUnit tests passing with 252 assertions, plus 6 of 6 JavaScript UI tests', e: 'test run, 20 Oct 2026' },
+          { v: '18 → 52', l: 'tests in 11 days, as subscriptions, imports and expenses landed', e: 'project log and test run, 9–20 Oct 2026' },
+          { v: '17 / 19', l: 'deploys green; both failures were on the pipeline’s first day', e: 'GitHub Actions history' },
+          { v: '39 s', l: 'median deploy run', e: 'GitHub Actions history' },
+          { v: '95 days', l: 'from first commit to a multi-tenant SaaS with subscriptions', e: 'git history' },
+          { v: '1 tap', l: 'to turn free beds for any date range into a WhatsApp message', e: 'free-beds dialog and its UI tests' }
+        ],
+        outcomesNote: 'These are engineering numbers. Live hotel counts, occupancy, bookings per week, renewal revenue and time saved at the front desk aren’t measured yet. Most can be queried from data the app already stores (the dashboard already computes occupancy) and will be published with a date once measured.',
+
+        region: {
+          t: 'Saudi readiness',
+          items: [
+            'Saudi defaults built in: SAR pricing (editable per hotel), Riyadh time zone, and an optional national ID on guests.',
+            'WhatsApp-first: support, availability sharing and renewals all run through click-to-chat links.',
+            'VAT fields exist (15% default and a VAT number) but aren’t applied to totals yet, and there is no ZATCA e-invoicing.',
+            'The interface is English-only today; Arabic and Hijri dates are the next step for a wider Saudi rollout.'
+          ]
+        },
+
+        links: [],
+        linksNote: 'The hotel software is private and its production address isn’t public, so there is nothing to click. Verification is by walkthrough or code excerpts.',
+        verify: [
+          'A short walkthrough on request: create a booking, try to double-book a bed (rejected), share free beds to WhatsApp, then expire a hotel and redeem a renewal code.',
+          'A demo instance seeded with fictional data.',
+          'Code excerpts on request: the bed-availability overlap query, renewal-code redemption under a row lock, and the deploy guards.',
+          'Screenshots of the passing test run and the deploy history.'
         ]
       }
     },
@@ -704,53 +929,6 @@ window.SITE = {
           'A link will be added here once a demo instance with fake student data is up.'
         ]
       }
-    },
-    {
-      id: 'slopsense',
-      name: 'slopSense',
-      label: 'AI Architecture',
-      role: 'AI Platform Architect',
-      cats: ['ai'],
-      hue: 330,
-      tagline: 'Autonomous agent platform built on custom ReAct reasoning loops, tool use and self-correction.',
-      problem: 'Simple API wrappers break the moment a task needs more than one step. The product needed agents that could plan, act, observe the result and try again without a human supervising every call.',
-      solution: 'I designed the platform architecture and data flow from the ground up around a custom ReAct (Reason + Act) loop: agents inspect tool output, reason about the next step, and iterate until the objective is verified.',
-      highlights: [
-        'System blueprints and data-flow diagrams for low-latency processing',
-        'Custom ReAct loop with bounded retries and verification steps',
-        'Tool registry with typed schemas and explicit failure handling',
-        'Designed for horizontal scaling of agent workers'
-      ],
-      outcomes: [
-        { v: 'Multi-step', l: 'autonomous task completion' },
-        { v: 'Bounded', l: 'retry and verification loops' }
-      ],
-      stack: ['Python', 'FastAPI', 'ReAct loops', 'Tool calling', 'Vector search'],
-      links: []
-    },
-    {
-      id: 'riwaq',
-      name: 'Riwaq Hotel PMS',
-      label: 'Hospitality',
-      role: 'Full-Stack Architect',
-      cats: ['ops', 'saas'],
-      hue: 160,
-      tagline: 'Multi-tenant property management system with bed-level inventory, collision-proof reservations and one-click WhatsApp dispatch.',
-      problem: 'High-turnover hotels and furnished apartments sell inventory down to the individual bed. Spreadsheets and generic booking tools double-booked rooms across multi-night stays and could not express Saudi pricing rules (SAR, VAT).',
-      solution: 'A multi-tenant PMS in Laravel 13 with a real-time availability engine that blocks overlapping active reservations across nights and partial-room bookings, SAR and VAT-aware pricing, and status workflows from pending to checked-out.',
-      highlights: [
-        'Collision algorithm for multi-night, bed-level inventory',
-        'Flexible seat-level and bed-level pricing models',
-        'One-click availability dispatch via the Clipboard API and prepared WhatsApp messages',
-        'Tenant-scoped data and roles for multi-property operators'
-      ],
-      outcomes: [
-        { v: '0', l: 'double bookings, by design' },
-        { v: '1-click', l: 'availability sharing' },
-        { v: 'SAR + VAT', l: 'native pricing rules' }
-      ],
-      stack: ['Laravel 13', 'PHP 8.3', 'Tailwind CSS 4', 'WhatsApp API', 'Clipboard API'],
-      links: [{ label: 'Source on GitHub', url: 'https://github.com/Koding-net/HotelManagementSystem' }]
     },
     {
       id: 'rentora',
