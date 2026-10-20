@@ -86,7 +86,7 @@ window.SITE = {
           ['Product', 'Multi-tenant SaaS + Electron desktop app'],
           ['Built for', 'Founders and ops leads at agencies, consultancies and studios'],
           ['Timeline', 'First commit 28 Sep 2026 → live 12 Oct 2026'],
-          ['Codebase', 'TypeScript monorepo · ~44,700 lines · 84 test files · 26 SQL migrations'],
+          ['Codebase', 'TypeScript monorepo: API, web console and Electron desktop app'],
           ['Models', 'Claude Haiku / Sonnet / Opus · OpenAI · Gemini · OpenRouter · Ollama and LM Studio locally']
         ],
         problem: 'Small service businesses burn founder time on repeatable work spread across many tools: follow-up emails, CRM updates, social posts, client status updates. AI chat can draft that work but cannot act in their tools. AI agents can act, but no owner will let one send email or post under the company name without controls.',
@@ -150,12 +150,12 @@ window.SITE = {
         outcomes: [
           { v: '15 days', l: 'first commit to a live web app and Mac release 0.4.10, across 24 merged PRs', e: 'git history, 28 Sep – 12 Oct 2026' },
           { v: '198 → 519', l: 'automated tests in 9 days, all passing at every release', e: 'dated release notes' },
-          { v: 'Every push', l: 'typecheck, lint, build, full suite on PGlite and Postgres 16, plus 2 Electron smoke tests', e: '.github/workflows/ci.yml' },
-          { v: '0', l: 'extra model calls to choose a tier', e: 'models/router.ts' },
-          { v: '50%', l: 'gross margin on managed AI usage; bring-your-own-key passed through at cost', e: 'credits release notes' },
+          { v: 'Every push', l: 'typecheck, lint, build, full suite on PGlite and Postgres 16, plus 2 Electron smoke tests', e: 'CI configuration' },
+          { v: '0', l: 'extra model calls to choose a tier', e: 'model router code' },
+          { v: '3', l: 'ways to pay for inference: your own API key at cost, local models on desktop, or managed credits', e: 'billing settings' },
           { v: 'EN + AR', l: 'two complete interfaces with full right-to-left layout', e: 'Arabic release notes' }
         ],
-        outcomesNote: 'Verified so far: delivery speed, engineering quality and unit economics. Production usage metrics (uptime against a 99.9% target, p95 turn latency per tier, cost saved by routing, approval turnaround) are being instrumented from data the schema already records, and will be published once measured, not before.',
+        outcomesNote: 'Verified so far: delivery speed and engineering quality. Production usage metrics (uptime against a 99.9% target, p95 turn latency per tier, cost saved by routing, approval turnaround) are being instrumented from data the schema already records, and will be published once measured, not before.',
 
         region: {
           t: 'Gulf readiness',
@@ -313,12 +313,12 @@ window.SITE = {
 
       /* Full 6-part case study. Client project, not yet deployed; metrics trace to git, test runs and the code. */
       cs: {
-        role: 'A client project, built by a three-person team over 40 days. I worked with AI coding agents under my direction and delivered the local Claude Code and Codex connectors and Google sign-in (PKCE, server-held tokens) with their tests, the UI/UX and accessibility pass, and the GitHub Actions pipeline to Hostinger. 10 of 47 non-merge commits are mine; teammates built the multi-tenant core, security hardening, model router and scraper.',
+        role: 'A client project, built by a three-person team over 40 days. I worked with AI coding agents under my direction and delivered the local Claude Code and Codex connectors and Google sign-in (PKCE, server-held tokens) with their tests, the UI/UX and accessibility pass, and the GitHub Actions deploy pipeline. Teammates built the multi-tenant core, security hardening, model router and scraper.',
         glance: [
           ['Product', 'News writer, link-to-story, document summariser, translator, voice dictation, news scraper, archive, analytics, WordPress and webhook publishing'],
           ['Built for', 'Newsroom teams: Writer, Editor, Tenant Admin and Viewer roles, plus a platform Super Admin'],
-          ['Timeline', '3 Sep → 13 Oct 2026 · 57 commits · 6 merged PRs'],
-          ['Codebase', '~34,800 lines of TypeScript · 17 test files · 7 SQL migrations · 19 permissions'],
+          ['Timeline', '3 Sep → 13 Oct 2026 · 6 merged PRs'],
+          ['Codebase', 'TypeScript: Express API, BullMQ worker and a React 19 workspace'],
           ['Status', 'In development, not yet deployed; client-owned private repository']
         ],
         problem: 'A newsroom works from many inputs: URLs, PDF and Word reports, audio and wire feeds. It has to turn them into edited articles in several languages and then push them into a CMS. Each step is a separate tool today, and on a small or multilingual desk one person does the research, writing, translation and CMS entry.',
@@ -364,7 +364,7 @@ window.SITE = {
             w: 'A convenience for the owner that never exposes personal credentials to tenants.', x: 'Not on-device inference: the CLIs still call vendor clouds.' },
           { t: 'Cost control', c: 'Per-call metering, a monthly USD budget per plan, a model allow-list, daily quota and concurrency caps', o: 'Provider-side limits only',
             w: 'Each tenant’s spend is visible and capped before the provider bill arrives.', x: 'Budget enforcement is per call, not transactional, under heavy concurrency.' },
-          { t: 'Deploy target', c: 'GitHub Actions to a Hostinger Web App, with API and worker in one process', o: 'The Docker Compose stack already in the repo',
+          { t: 'Deploy target', c: 'GitHub Actions to a shared-hosting web app, with API and worker in one process', o: 'The Docker Compose stack already in the repo',
             w: 'Shared hosting runs a single process; one pipeline creates or finds the site, syncs env, migrates and health-checks.', x: 'No horizontal scaling on this target.' }
         ],
 
@@ -390,7 +390,7 @@ window.SITE = {
         },
 
         limits: [
-          { l: 'Not deployed yet; the Hostinger pipeline fails at site creation', n: 'Create the site with an owner-level token, re-run, confirm /healthz' },
+          { l: 'Not deployed yet; the deploy pipeline fails at site creation', n: 'Create the site with an owner-level token, re-run, confirm /healthz' },
           { l: 'No CI quality gate before deploy', n: 'A test job with Postgres and Redis services that the deploy depends on' },
           { l: 'Tenant isolation is application-level only', n: 'Postgres RLS policies as a database backstop' },
           { l: 'Audit rows are plain and pruned by retention', n: 'Hash-chained rows or write-once storage' },
@@ -402,9 +402,9 @@ window.SITE = {
           { v: '44 / 44', l: 'tests passing in the 7 files that need no database, plus a clean tsc --noEmit', e: 'npx tsx --test, 13 Oct 2026' },
           { v: '76', l: 'test cases across 17 files; the other 10 files need Postgres and Redis', e: 'tests/, static count' },
           { v: '6 / 6', l: 'audit defects fixed the same day they were found', e: 'audit report and commit history, 12 Oct 2026' },
-          { v: '0', l: 'secrets found across all 57 commits of git history (8 key patterns)', e: 'git grep over git rev-list --all' },
-          { v: '12', l: 'models across 4 providers behind one metered call path', e: 'llmService.ts model registry' },
-          { v: '19', l: 'permissions across 4 tenant roles, a Super Admin and 4 plans', e: 'rbac.ts, plan seed migration' }
+          { v: '0', l: 'secrets found anywhere in the git history (8 key patterns)', e: 'full-history secret scan' },
+          { v: '12', l: 'models across 4 providers behind one metered call path', e: 'model registry in code' },
+          { v: '19', l: 'permissions across 4 tenant roles, a Super Admin and 4 plans', e: 'role and plan definitions' }
         ],
         outcomesNote: 'The repo measures build quality, not product outcomes: the product isn’t deployed, so there are no uptime, latency, cost or time-saved figures. The data for most of them is already collected (per-call cost in UsageEvent, job timings, publish status in UserActivity) and will be reported once it runs in production.',
 
@@ -538,6 +538,29 @@ window.SITE = {
       }
     },
     {
+      id: 'iconking',
+      name: 'IconKing',
+      label: 'Design Tooling',
+      role: 'Full-Stack & DevOps Engineer',
+      cats: ['saas', 'devops'],
+      hue: 290,
+      tagline: 'Design-asset distribution platform with a custom Figma plugin and hands-free Laravel automations.',
+      problem: 'Designers produced icon sets in Figma, but getting them optimized, packaged and published to the web platform was manual and error-prone.',
+      solution: 'A custom Figma plugin streams vector assets straight into the application server, where Laravel Artisan schedules handle optimization, caching, backups and subscription lifecycle events.',
+      highlights: [
+        'Figma plugin to server ingestion of vector assets',
+        'Scheduled asset optimization and cache warming',
+        'Subscription lifecycle automation',
+        'Backup routines and monitoring'
+      ],
+      outcomes: [
+        { v: 'Hands-free', l: 'asset publishing' },
+        { v: 'Scheduled', l: 'optimization and backups' }
+      ],
+      stack: ['Laravel', 'Figma Plugin API', 'Artisan scheduler', 'Nginx'],
+      links: [{ label: 'iconking.net', url: 'https://iconking.net' }]
+    },
+    {
       id: 'esim',
       name: 'eSIMzee',
       label: 'Travel eSIM Comparison',
@@ -550,12 +573,12 @@ window.SITE = {
 
       /* Full 6-part case study. Live product; metrics trace to git, test runs, the typecheck and the public API. */
       cs: {
-        role: 'Lead engineer and repository owner on a three-person team. I set up the Cloudflare stack and CI/CD and built the scheduled sync path: cron triggers, queue and worker. I also wrote five of the eight provider adapters, designed the schema and migrations, wrote the affiliate-attribution guard and built the bulk catalog importer. I opened and merged all 17 merged pull requests. Teammates built most of the admin panel and the AI chat and search layer. I work with AI coding agents under my direction: 17 of my commits list Claude as co-author.',
+        role: 'Lead engineer and repository owner on a three-person team. I set up the Cloudflare stack and CI/CD and built the scheduled sync path: cron triggers, queue and worker. I also wrote five of the eight provider adapters, designed the schema and migrations, wrote the affiliate-attribution guard and built the bulk catalog importer. I opened and merged all 17 merged pull requests. Teammates built most of the admin panel and the AI chat and search layer. I work with AI coding agents under my direction.',
         glance: [
           ['Product', 'Compares travel eSIM plans by country, region and provider, with an AI plan search, a chat assistant, a trip planner and a device checker. Affiliate-funded: “View Deal” sends the traveler to the provider.'],
           ['Built for', 'Travelers choosing a data plan, plus the operator’s editors and admins (27 admin pages)'],
-          ['Timeline', '1 Apr → 11 Oct 2026 · 162 commits, 103 of the 131 non-merge commits mine · 17 merged PRs'],
-          ['Codebase', '~48,600 lines of TypeScript, Astro and CSS · ~160 API route handlers · 18 tables and 3 full-text indexes'],
+          ['Timeline', '1 Apr → 11 Oct 2026 · 17 merged PRs'],
+          ['Codebase', 'TypeScript and Astro on Cloudflare, with full-text search across the catalog'],
           ['Platform', 'Cloudflare Workers, Pages, D1, KV, R2, Queues, Durable Objects and Workers AI · GitHub Actions'],
           ['Status', 'Live at esimzee.com; private repository']
         ],
@@ -695,7 +718,7 @@ window.SITE = {
           ['Built for', 'The institute owner (Super Admin), campus Branch Managers, and prospective students and parents'],
           ['Market', 'Pakistan: fees in PKR, the father’s CNIC on enrollment, +92 phone numbers'],
           ['Timeline', '10 Aug → 19 Oct 2026 · 12 commits on 5 working days'],
-          ['Codebase', '~7,300 lines of app code · 1,163 lines of tests · 30 routes · 5 models'],
+          ['Codebase', 'Laravel monolith: public site, branch-scoped admin, PHPUnit suite and CI'],
           ['Status', 'Deployed by CI to the owner’s shared hosting (6 of 6 deploys succeeded); private repository']
         ],
         problem: 'A computer institute with several campuses needs one record of students and fees. Each campus manager may see only their own campus, while the owner needs fee totals across the whole network. Prospective students and parents need course, duration and fee in one visit, plus a way to ask about enrolling.',
@@ -731,10 +754,10 @@ window.SITE = {
 
         decisions: [
           { t: 'UI stack', c: 'Server-rendered Blade + jQuery, with one set of design tokens for the public site and the admin', o: 'Inertia or a single-page app',
-            w: 'The simplest stack for marketing pages, and one design system serves both surfaces.', x: 'Admin interactivity is hand-written: admin.js alone is 761 lines.' },
+            w: 'The simplest stack for marketing pages, and one design system serves both surfaces.', x: 'Admin interactivity is hand-written in plain JavaScript, with no component library.' },
           { t: 'Admin and roles', c: 'A custom Blade admin, Fortify login and a two-value UserRole enum', o: 'Filament, and Spatie permissions',
             w: 'Only two roles exist, and the admin keeps the site’s own design system.', x: 'Every CRUD screen is built by hand, and there is no permission matrix.' },
-          { t: 'Hosting and deploy', c: 'Build in GitHub Actions, then rsync --delete over SSH to Namecheap shared hosting', o: 'Laravel Cloud, Forge, or building on the host',
+          { t: 'Hosting and deploy', c: 'Build in GitHub Actions, then rsync --delete over SSH to shared hosting', o: 'Laravel Cloud, Forge, or building on the host',
             w: 'The owner’s hosting choice, and a shared host can’t build assets reliably.', x: 'No atomic release or rollback step: files sync in place.' },
           { t: 'Database', c: 'SQLite, with sessions, cache and queue on the database driver', o: 'MySQL or Postgres, plus Redis',
             w: 'No database server to run or administer on shared hosting.', x: 'One writer at a time, and no automated backups yet.' },
@@ -777,8 +800,8 @@ window.SITE = {
           { v: '13', l: 'feature tests for branch isolation and authorization', e: 'tests/Feature/Admin' },
           { v: '6 / 6', l: 'deploys succeeded, 28–51 s each', e: 'GitHub Actions run history, 11 Aug → 12 Sep 2026' },
           { v: '0', l: 'lint violations (Laravel Pint)', e: 'pint --test, 19 Oct 2026' },
-          { v: '~7,300', l: 'non-blank lines of app code, plus 1,163 lines of tests', e: 'git ls-files line count' },
-          { v: '30', l: 'app routes over 5 models', e: 'php artisan route:list' }
+          { v: '10 weeks', l: 'from first commit to a deployed multi-branch system, built solo', e: 'git history' },
+          { v: '2', l: 'roles, Super Admin and Branch Manager, enforced by policies and query scopes', e: 'UserRole enum, policies and feature tests' }
         ],
         outcomesNote: 'These are engineering numbers. The repository doesn’t measure production use: uptime, latency, active users, time saved and fees processed aren’t recorded yet. Most can come from data the system already holds: the /up endpoint for uptime, the students and fee_payments tables for enrollments and collections per branch, and the users table for active staff.',
 
@@ -851,29 +874,6 @@ window.SITE = {
       links: []
     },
     {
-      id: 'iconking',
-      name: 'IconKing',
-      label: 'Design Tooling',
-      role: 'Full-Stack & DevOps Engineer',
-      cats: ['saas', 'devops'],
-      hue: 290,
-      tagline: 'Design-asset distribution platform with a custom Figma plugin and hands-free Laravel automations.',
-      problem: 'Designers produced icon sets in Figma, but getting them optimized, packaged and published to the web platform was manual and error-prone.',
-      solution: 'A custom Figma plugin streams vector assets straight into the application server, where Laravel Artisan schedules handle optimization, caching, backups and subscription lifecycle events.',
-      highlights: [
-        'Figma plugin to server ingestion of vector assets',
-        'Scheduled asset optimization and cache warming',
-        'Subscription lifecycle automation',
-        'Backup routines and monitoring'
-      ],
-      outcomes: [
-        { v: 'Hands-free', l: 'asset publishing' },
-        { v: 'Scheduled', l: 'optimization and backups' }
-      ],
-      stack: ['Laravel', 'Figma Plugin API', 'Artisan scheduler', 'Nginx'],
-      links: [{ label: 'iconking.net', url: 'https://iconking.net' }]
-    },
-    {
       id: 'spectrumgenius',
       name: 'Spectrum Genius',
       label: 'Web Platform',
@@ -909,12 +909,12 @@ window.SITE = {
 
       /* Full 6-part case study. Metrics trace to git, the test run, the live sitemap or Search Console. */
       cs: {
-        role: 'My own venture. As product owner, architect and lead engineer I directed AI coding agents (Claude and Codex) through the build; 94 of 98 commits (95.9%) and 95.2% of added lines are under my name. That covers the Laravel app and data model, the Filament admin, the ingestion pipeline, the three LLM pipelines, the evidence-gated trust model, the SEO layer and the guarded deploy. One other contributor added 4 commits on a single day.',
+        role: 'My own venture. As product owner, architect and lead engineer I directed AI coding agents (Claude and Codex) through the build, and nearly all of the work is mine. That covers the Laravel app and data model, the Filament admin, the ingestion pipeline, the three LLM pipelines, the evidence-gated trust model, the SEO layer and the guarded deploy. One other contributor helped briefly.',
         glance: [
           ['Product', 'Server-rendered discovery site for AI agents, automations, workflows and task guides'],
           ['Built for', 'Founders, agencies, business owners, automation builders and AI consultants'],
-          ['Timeline', '4 Jun → 11 Oct 2026 · 98 commits · 11 merged PRs'],
-          ['Codebase', '~10,100 lines of PHP · ~6,800 lines of Blade, CSS and JS · 38 migrations · 19 models'],
+          ['Timeline', '4 Jun → 11 Oct 2026 · 11 merged PRs'],
+          ['Codebase', 'Laravel monolith: Blade views, Livewire widgets, a Filament admin and scheduled jobs'],
           ['AI layer', 'OpenRouter with live web search; deepseek-chat-v3.1 by default, swappable with one env var']
         ],
         problem: 'Buyers of AI automation can’t tell which tool actually solves a given business task. Search a generic directory for “WhatsApp automation” and you get half-abandoned tools, duplicate listings and products renamed three times. And a small team can’t keep a directory fresh by hand.',
@@ -941,7 +941,7 @@ window.SITE = {
             ] }
           ],
           bus: 'both paths meet in MySQL',
-          store: { t: 'MySQL · single database', items: ['19 models · 38 migrations', 'Cache, queue and sessions on the database driver', 'Filament admin (12 resources), admin-only'] },
+          store: { t: 'MySQL · single database', items: ['Listings, tools, workflows, guides and news', 'Cache, queue and sessions on the database driver', 'Filament admin (12 resources), admin-only'] },
           caption: 'Visitors only read; scheduled jobs write. The AI layer is a set of bounded batch pipelines, not an interactive agent: no ReAct loop and no tool calling, so the model can only return text that code then validates. For a content system that removes a whole class of runaway-agent risk.'
         },
 
@@ -989,10 +989,10 @@ window.SITE = {
         outcomes: [
           { v: '504', l: 'live URLs in the sitemap: 446 tools, 24 workflows, 16 guides, 15 pages, 3 task hubs', e: 'sitemap.xml, checked 12 Oct 2026' },
           { v: '143 / 143', l: 'backend tests passing with 591 assertions, plus 3 frontend tests', e: 'php artisan test, 12 Oct 2026' },
-          { v: '120 → 143', l: 'tests added in 10 days alongside the trust and SEO work', e: 'session log, 1–11 Oct 2026' },
+          { v: '120 → 143', l: 'tests added in 10 days alongside the trust and SEO work', e: 'test history, 1–11 Oct 2026' },
           { v: '487', l: 'pages discovered by Google Search Console from the sitemap', e: 'Search Console, 1 Oct 2026' },
-          { v: '95.9%', l: 'of 98 commits and 95.2% of added lines are mine, over 4 months', e: 'git shortlog, git log --numstat' },
-          { v: '4', l: 'scheduled AI and import pipelines, each locked against overlapping runs', e: 'routes/console.php' }
+          { v: '0', l: 'ratings, badges or testimonials shown without a stored source and date', e: 'trust gate and its feature test' },
+          { v: '4', l: 'scheduled AI and import pipelines, each locked against overlapping runs', e: 'scheduler configuration' }
         ],
         outcomesNote: 'These numbers cover build quality and public footprint. Traffic, uptime, latency, LLM cost per article, import yield and revenue aren’t measured yet. Each has a planned source (an external monitor on /up, OpenRouter usage blocks, per-run import counts, Search Console exports) and will be published with a date once measured.',
 
